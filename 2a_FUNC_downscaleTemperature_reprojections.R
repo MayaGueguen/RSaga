@@ -16,9 +16,11 @@ path.to.SAGA = path.to.data
 zone_name.clouds = "World"
 zone_name.tempCHELSA = "World"
 zone_name.tempERA = "World"
+zone_name.GMTED = "FID30"
 proj.res.clouds = 6000
 proj.res.tempCHELSA = 4000
 proj.res.tempERA = "100000"
+proj.res.GMTED = "310"
 proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
 
@@ -166,6 +168,38 @@ for (mm in 1:12)
     #   system(system.command)
     # }
   }
+}
+
+###################################################################
+
+new.folder.name = paste0("../", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
+}
+
+### GMTED2010 DEM
+cat("\n ==> Reproject GMTED2010 DEM \n")
+
+input.name = paste0("DEM/RAW/30N000E_20101117_gmted_mea075.tif")
+new.file.name = paste0("DEM_REF_", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, ".sgrd")
+output.name = sub(
+  basename(input.name),
+  paste0(new.folder.name, new.file.name),
+  input.name
+)
+
+if (!file.exists(paste0(path.to.data, output.name)))
+{
+  system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
+                          , paste0("\"", proj.value, "\"")
+                          , " -SOURCE="
+                          , paste0("\"", path.to.data, input.name, "\"")
+                          , " -GRIDS="
+                          , paste0("\"", path.to.data, output.name, "\"")
+                          , " -RESAMPLING=3") ## B-spline interpolation
+  
+  system(system.command)
 }
 
 

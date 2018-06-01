@@ -12,9 +12,11 @@ setwd(path.to.data)
 zone_name.clouds = "World" ## DO NOT CHANGE !
 zone_name.tempCHELSA = "World" ## DO NOT CHANGE !
 zone_name.tempERA = "World" ## DO NOT CHANGE !
+zone_name.GMTED = "FID30"
 proj.res.clouds = 6000 ## DO NOT CHANGE !
 proj.res.tempCHELSA = 4000 ## DO NOT CHANGE !
 proj.res.tempERA = "100000" ## DO NOT CHANGE !
+proj.res.GMTED = 310 ## DO NOT CHANGE !
 
 zone_name = "Bauges" #"Lautaret"
 DEM_name = "DEM/DEM_Bauges.img"
@@ -179,6 +181,39 @@ for (mm in 1:12)
 }
 
 ###################################################################
+
+new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
+}
+
+cat("\n ==> Clip and downscale GMTED2010 DEM \n")
+
+input.name = paste0("DEM/", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, "/")
+input.name = paste0(input.name, "DEM_REF_", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, ".sgrd")
+new.file.name = paste0("DEM_REF_", zone_name, "_", proj.name, "_resolution", proj.res, ".sgrd")
+output.name = sub(
+  basename(input.name),
+  paste0(new.folder.name, new.file.name),
+  input.name
+)
+
+if (!file.exists(paste0(path.to.data, output.name)))
+{
+  system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                          , paste0("\"", path.to.data, input.name, "\"")
+                          , " -OUTPUT="
+                          , paste0("\"", path.to.data, output.name, "\"")
+                          , " -SCALE_DOWN=3"
+                          , " -TARGET_DEFINITION=1"
+                          , " -TARGET_TEMPLATE="
+                          , paste0("\"", path.to.data, DEM_name, "\""))
+  
+  system(system.command) 
+}
+
+###################################################################
 ### SKY VIEW FACTOR
 ###################################################################
 
@@ -292,10 +327,11 @@ clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", 
 input.name.dem = DEM_name
 
 setwd(path.to.data)
+val_LAI = 0.01
 input.lai = raster(readGDAL(sub(".sgrd", ".sdat", input.name.dem)))
-input.lai[] = 0.01
-names(input.lai) = sub("DEM_", "LAI_", basename(DEM_name))
-input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_", basename(DEM_name)), DEM_name)
+input.lai[] = val_LAI
+names(input.lai) = sub("DEM_", paste0("LAI_", val_LAI, "_"), basename(DEM_name))
+input.name.lai = sub(basename(DEM_name), sub("DEM_", paste0("LAI_", val_LAI, "_"), basename(DEM_name)), DEM_name)
 writeRaster(input.lai, file = input.name.lai, dataType = "FLT4S", overwrite = TRUE)
 setwd(path.to.SAGA)
 
