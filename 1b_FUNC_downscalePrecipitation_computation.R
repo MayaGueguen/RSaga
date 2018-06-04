@@ -5,15 +5,20 @@ library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 setwd(path.to.data)
 zone_name.precip = "World" ## DO NOT CHANGE !
 proj.res.precip = 1200  ## DO NOT CHANGE !
 
-zone_name = "Alps" #"Lautaret"
-DEM_name = "DEM/DEM_Alps.img"
+zone_name = "Bauges"
+DEM_name = "DEM/RAW/DEM_Bauges.img"
+# zone_name = "Lautaret"
+# DEM_name = "DEM/RAW/DEM_Lautaret.img"
+# zone_name = "Alps"
+# DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
+
 DEM_ras = raster(DEM_name)
 proj.res = unique(res(DEM_ras))
 proj.name = "ETRS89"
@@ -26,8 +31,16 @@ setwd(path.to.SAGA)
 ###################################################################
 
 ### DEM
+new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
+}
+
 input.name = DEM_name
-output.name = sub(basename(input.name), paste0("DEM_", zone_name, "_", proj.name, "_resolution", proj.res,".sgrd"), input.name)
+output.name = sub(basename(input.name)
+                  , paste0(new.folder.name, "DEM_", zone_name, "_", proj.name, "_resolution", proj.res,".sgrd")
+                  , input.name)
 DEM_name = output.name
 
 if (!file.exists(paste0(path.to.data, output.name)))

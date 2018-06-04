@@ -5,7 +5,7 @@ library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 setwd(path.to.data)
@@ -18,8 +18,13 @@ proj.res.tempCHELSA = 4000 ## DO NOT CHANGE !
 proj.res.tempERA = "100000" ## DO NOT CHANGE !
 proj.res.GMTED = 310 ## DO NOT CHANGE !
 
-zone_name = "Bauges" #"Lautaret"
-DEM_name = "DEM/DEM_Bauges.img"
+zone_name = "Bauges"
+DEM_name = "DEM/RAW/DEM_Bauges.img"
+# zone_name = "Lautaret"
+# DEM_name = "DEM/RAW/DEM_Lautaret.img"
+# zone_name = "Alps"
+# DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
+
 DEM_ras = raster(DEM_name)
 proj.res = unique(res(DEM_ras))
 proj.name = "Mercator"
@@ -32,8 +37,16 @@ setwd(path.to.SAGA)
 ###################################################################
 
 ### DEM
+new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
+}
+
 input.name = DEM_name
-output.name = sub(basename(input.name), paste0("DEM_", zone_name, "_", proj.name, "_resolution", proj.res,".sgrd"), input.name)
+output.name = sub(basename(input.name)
+                  , paste0(new.folder.name, "DEM_", zone_name, "_", proj.name, "_resolution", proj.res,".sgrd")
+                  , input.name)
 DEM_name = output.name
 
 if (!file.exists(paste0(path.to.data, output.name)))
@@ -53,6 +66,33 @@ if (!file.exists(paste0(path.to.data, output.name)))
   system(system.command)
 }
 
+## LEAF AREA INDEX for LST calculation
+input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
+if(!file.exists(input.name.lai))
+{
+  system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                          , paste0("\"", path.to.data, DEM_name, "\"")
+                          , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                          , paste0("\"", path.to.data, input.name.lai, "\"")
+                          ,"NULL -FORMULA=0.01 -NAME="
+                          , sub(".sgrd", "", sub("DEM_", "LAI_0.01_", basename(DEM_name)))
+                          , " -TYPE=7")
+  system(system.command) 
+}
+
+## 0 DEM
+input.name.DEM.null = sub(basename(DEM_name), sub("DEM_", "DEM_NULL_", basename(DEM_name)), DEM_name)
+if(!file.exists(input.name.DEM.null))
+{
+  system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                          , paste0("\"", path.to.data, DEM_name, "\"")
+                          , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                          , paste0("\"", path.to.data, input.name.DEM.null, "\"")
+                          ,"NULL -FORMULA=0 -NAME="
+                          , sub(".sgrd", "", sub("DEM_", "DEM_NULL_", basename(DEM_name)))
+                          , " -TYPE=7")
+  system(system.command) 
+}
 
 ###################################################################
 ### CLIP INPUT data
@@ -236,6 +276,25 @@ if (!file.exists(paste0(path.to.data, output.name.svf)))
   system(system.command)
 }
 
+### DEM NULL
+input.name = input.name.DEM.null
+output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
+output.name.svf = sub(extension(input.name), "_SVF.sgrd", input.name)
+
+if (!file.exists(paste0(path.to.data, output.name.svf)))
+{
+  cat("\n ==> Calculating sky view factor with DEM NULL\n")
+  
+  system.command = paste0("saga_cmd ta_lighting 3 -DEM="
+                          , paste0("\"", path.to.data, input.name, "\"")
+                          , " -VISIBLE="
+                          , paste0("\"", path.to.data, output.name.vis, "\"")
+                          , " -SVF="
+                          , paste0("\"", path.to.data, output.name.svf, "\""))
+  
+  system(system.command)
+}
+
 
 ###################################################################
 ### LAPSE RATE
@@ -286,35 +345,47 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
   dir.create(paste0(path.to.data, new.folder.name))
 }
 
-input.name.dem = DEM_name
-input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
-
-for (mm in 1:12)
+for (VAR in c(DEM_name, input.name.DEM.null))
 {
-  cat("\n ==> Calculate solar radiation for month ", mm, "\n")
-
-  nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(2018, mm, 1),
-                                          to = ISOdate(ifelse(mm == 12, 2019, 2018), ifelse(mm == 12, 1, mm + 1), 1),
-                                          by = "day"))) - 1
-  output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
-  output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
-  output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
   
-  if (mm<=9) mm = paste0("0",mm)
-  system.command = paste0("saga_cmd ta_lighting 2 -GRD_DEM="
-                          , paste0("\"", path.to.data, input.name.dem, "\"")
-                          , " -GRD_SVF="
-                          , paste0("\"", path.to.data, input.name.svf, "\"")
-                          , " -GRD_DIRECT="
-                          , paste0("\"", path.to.data, output.name.direct, "\"")
-                          , " -GRD_DIFFUS="
-                          , paste0("\"", path.to.data, output.name.diffus, "\"")
-                          , " -GRD_TOTAL="
-                          , paste0("\"", path.to.data, output.name.total, "\"")
-                          , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm,"-1 -DAY_STOP=2018-", mm,"-", nb.days
-                          , " -DAYS_STEP=1")
+  input.name.dem = VAR
+  input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
   
-  system(system.command)
+  for (mm in 1:12)
+  {
+    cat("\n ==> Calculate solar radiation for month ", mm, "\n")
+    
+    nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(2018, mm, 1),
+                                            to = ISOdate(ifelse(mm == 12, 2019, 2018), ifelse(mm == 12, 1, mm + 1), 1),
+                                            by = "day"))) - 1
+    output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+    output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+    output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+    if (length(grep("NULL", VAR)) > 0){
+      output.name.direct = sub(extension(output.name.direct), "_NULL.sgrd", output.name.direct)
+      output.name.diffus = sub(extension(output.name.diffus), "_NULL.sgrd", output.name.diffus)
+      output.name.total = sub(extension(output.name.total), "_NULL.sgrd", output.name.total)
+    }
+    
+    if (!file.exists(paste0(path.to.data, output.name.total)))
+    {
+      if (mm<=9) mm = paste0("0",mm)
+      system.command = paste0("saga_cmd ta_lighting 2 -GRD_DEM="
+                              , paste0("\"", path.to.data, input.name.dem, "\"")
+                              , " -GRD_SVF="
+                              , paste0("\"", path.to.data, input.name.svf, "\"")
+                              , " -GRD_DIRECT="
+                              , paste0("\"", path.to.data, output.name.direct, "\"")
+                              , " -GRD_DIFFUS="
+                              , paste0("\"", path.to.data, output.name.diffus, "\"")
+                              , " -GRD_TOTAL="
+                              , paste0("\"", path.to.data, output.name.total, "\"")
+                              , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm,"-1 -DAY_STOP=2018-", mm,"-", nb.days
+                              , " -DAYS_STEP=1")
+      
+      system(system.command)
+    }
+  }
 }
 
 
@@ -325,15 +396,6 @@ for (mm in 1:12)
 solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 input.name.dem = DEM_name
-
-setwd(path.to.data)
-val_LAI = 0.01
-input.lai = raster(readGDAL(sub(".sgrd", ".sdat", input.name.dem)))
-input.lai[] = val_LAI
-names(input.lai) = sub("DEM_", paste0("LAI_", val_LAI, "_"), basename(DEM_name))
-input.name.lai = sub(basename(DEM_name), sub("DEM_", paste0("LAI_", val_LAI, "_"), basename(DEM_name)), DEM_name)
-writeRaster(input.lai, file = input.name.lai, dataType = "FLT4S", overwrite = TRUE)
-setwd(path.to.SAGA)
 
 for (mm in 1:12)
 {
