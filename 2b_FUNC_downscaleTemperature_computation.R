@@ -81,15 +81,15 @@ if(!file.exists(input.name.lai))
 }
 
 ## FLAT DEM (1)
-input.name.DEM.null = sub(basename(DEM_name), sub("DEM_", "DEM_NULL_", basename(DEM_name)), DEM_name)
-if(!file.exists(input.name.DEM.null))
+input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
+if(!file.exists(input.name.DEM.flat))
 {
   system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                           , paste0("\"", path.to.data, DEM_name, "\"")
                           , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
-                          , paste0("\"", path.to.data, input.name.DEM.null, "\"")
+                          , paste0("\"", path.to.data, input.name.DEM.flat, "\"")
                           , " -FORMULA=1 -NAME="
-                          , sub(".sgrd", "", sub("DEM_", "DEM_NULL_", basename(DEM_name)))
+                          , sub(".sgrd", "", sub("DEM_", "DEM_FLAT_", basename(DEM_name)))
                           , " -TYPE=7")
   system(system.command) 
 }
@@ -257,8 +257,8 @@ if (!file.exists(paste0(path.to.data, output.name)))
 ### SKY VIEW FACTOR
 ###################################################################
 
-### DEM or  DEM NULL
-for (VAR in c(DEM_name, input.name.DEM.null))
+### DEM or DEM FLAT
+for (VAR in c(DEM_name, input.name.DEM.flat))
 {
   input.name = VAR
   output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
@@ -329,7 +329,7 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
   dir.create(paste0(path.to.data, new.folder.name))
 }
 
-for (VAR in c(DEM_name, input.name.DEM.null))
+for (VAR in c(DEM_name, input.name.DEM.flat))
 {
   
   input.name.dem = VAR
@@ -345,10 +345,10 @@ for (VAR in c(DEM_name, input.name.DEM.null))
     output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
     output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
     output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
-    if (length(grep("NULL", VAR)) > 0){
-      output.name.direct = sub(extension(output.name.direct), "_NULL.sgrd", output.name.direct)
-      output.name.diffus = sub(extension(output.name.diffus), "_NULL.sgrd", output.name.diffus)
-      output.name.total = sub(extension(output.name.total), "_NULL.sgrd", output.name.total)
+    if (length(grep("FLAT", VAR)) > 0){
+      output.name.direct = sub(extension(output.name.direct), "_DEM_FLAT.sgrd", output.name.direct)
+      output.name.diffus = sub(extension(output.name.diffus), "_DEM_FLAT.sgrd", output.name.diffus)
+      output.name.total = sub(extension(output.name.total), "_DEM_FLAT.sgrd", output.name.total)
     }
     
     if (!file.exists(paste0(path.to.data, output.name.total)))
@@ -380,7 +380,7 @@ for (VAR in c(DEM_name, input.name.DEM.null))
 solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 
-for (VAR in c(DEM_name, input.name.DEM.null))
+for (VAR in c(DEM_name, input.name.DEM.flat))
 {
   
   input.name.dem = VAR
@@ -394,8 +394,8 @@ for (VAR in c(DEM_name, input.name.DEM.null))
     ## Total radiation
     a.name = paste0("TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
     a.name = paste0(solar.folder.name, a.name)
-    if (length(grep("NULL", VAR)) > 0){
-      a.name = sub(extension(a.name), "_NULL.sgrd", a.name)
+    if (length(grep("FLAT", VAR)) > 0){
+      a.name = sub(extension(a.name), "_DEM_FLAT.sgrd", a.name)
     }
     
     ## Corrected cloud cover
@@ -406,8 +406,8 @@ for (VAR in c(DEM_name, input.name.DEM.null))
     ## Corrected solar radiation
     solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
     solarrad.name = paste0(solar.folder.name, solarrad.name)
-    if (length(grep("NULL", VAR)) > 0){
-      solarrad.name = sub(extension(solarrad.name), "_NULL.sgrd", solarrad.name)
+    if (length(grep("FLAT", VAR)) > 0){
+      solarrad.name = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
     }
     
     if (!file.exists(solarrad.name))
@@ -446,16 +446,16 @@ for (mm in 1:12)
   solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
   solarrad.name = paste0(solar.folder.name, solarrad.name)
   
-  ## Corrected solar radiation (DEM NULL)
-  solarrad.name.NULL = sub(extension(solarrad.name), "_NULL.sgrd", solarrad.name)
+  ## Corrected solar radiation (DEM FLAT)
+  solarrad.name.flat = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
   
-  ## Quotient solar radiation (DEM NULL) / solar radiation (DEM)
+  ## Quotient solar radiation (DEM FLAT) / solar radiation (DEM)
   quotient.name = paste0("Quotient_SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
   quotient.name = paste0(solar.folder.name, quotient.name)
   
   if (!file.exists(quotient.name))
   {
-    input.name = c(solarrad.name, solarrad.name.NULL)
+    input.name = c(solarrad.name, solarrad.name.flat)
     
     system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                             , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
