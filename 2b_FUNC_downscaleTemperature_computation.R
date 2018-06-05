@@ -52,7 +52,7 @@ DEM_name = output.name
 if (!file.exists(paste0(path.to.data, output.name)))
 {
   cat("\n ==> Reproject DEM into ", proj.name, " projection and .sgrd file \n")
-
+  
   system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
                           , paste0("\"", proj.value, "\"")
                           , " -SOURCE="
@@ -74,13 +74,13 @@ if(!file.exists(input.name.lai))
                           , paste0("\"", path.to.data, DEM_name, "\"")
                           , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
                           , paste0("\"", path.to.data, input.name.lai, "\"")
-                          ,"NULL -FORMULA=0.01 -NAME="
+                          , " -FORMULA=0.01 -NAME="
                           , sub(".sgrd", "", sub("DEM_", "LAI_0.01_", basename(DEM_name)))
                           , " -TYPE=7")
   system(system.command) 
 }
 
-## 0 DEM
+## FLAT DEM (1)
 input.name.DEM.null = sub(basename(DEM_name), sub("DEM_", "DEM_NULL_", basename(DEM_name)), DEM_name)
 if(!file.exists(input.name.DEM.null))
 {
@@ -88,7 +88,7 @@ if(!file.exists(input.name.DEM.null))
                           , paste0("\"", path.to.data, DEM_name, "\"")
                           , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
                           , paste0("\"", path.to.data, input.name.DEM.null, "\"")
-                          ,"NULL -FORMULA=0 -NAME="
+                          , " -FORMULA=1 -NAME="
                           , sub(".sgrd", "", sub("DEM_", "DEM_NULL_", basename(DEM_name)))
                           , " -TYPE=7")
   system(system.command) 
@@ -257,42 +257,26 @@ if (!file.exists(paste0(path.to.data, output.name)))
 ### SKY VIEW FACTOR
 ###################################################################
 
-### DEM
-input.name = DEM_name
-output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
-output.name.svf = sub(extension(input.name), "_SVF.sgrd", input.name)
-
-if (!file.exists(paste0(path.to.data, output.name.svf)))
+### DEM or  DEM NULL
+for (VAR in c(DEM_name, input.name.DEM.null))
 {
-  cat("\n ==> Calculating sky view factor \n")
+  input.name = VAR
+  output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
+  output.name.svf = sub(extension(input.name), "_SVF.sgrd", input.name)
   
-  system.command = paste0("saga_cmd ta_lighting 3 -DEM="
-                          , paste0("\"", path.to.data, input.name, "\"")
-                          , " -VISIBLE="
-                          , paste0("\"", path.to.data, output.name.vis, "\"")
-                          , " -SVF="
-                          , paste0("\"", path.to.data, output.name.svf, "\""))
-  
-  system(system.command)
-}
-
-### DEM NULL
-input.name = input.name.DEM.null
-output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
-output.name.svf = sub(extension(input.name), "_SVF.sgrd", input.name)
-
-if (!file.exists(paste0(path.to.data, output.name.svf)))
-{
-  cat("\n ==> Calculating sky view factor with DEM NULL\n")
-  
-  system.command = paste0("saga_cmd ta_lighting 3 -DEM="
-                          , paste0("\"", path.to.data, input.name, "\"")
-                          , " -VISIBLE="
-                          , paste0("\"", path.to.data, output.name.vis, "\"")
-                          , " -SVF="
-                          , paste0("\"", path.to.data, output.name.svf, "\""))
-  
-  system(system.command)
+  if (!file.exists(paste0(path.to.data, output.name.svf)))
+  {
+    cat("\n ==> Calculating sky view factor \n")
+    
+    system.command = paste0("saga_cmd ta_lighting 3 -DEM="
+                            , paste0("\"", path.to.data, input.name, "\"")
+                            , " -VISIBLE="
+                            , paste0("\"", path.to.data, output.name.vis, "\"")
+                            , " -SVF="
+                            , paste0("\"", path.to.data, output.name.svf, "\""))
+    
+    system(system.command)
+  }
 }
 
 
@@ -311,7 +295,7 @@ if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name)))
 for (mm in 1:12)
 {
   cat("\n ==> Clip and downscale lapse-rate for month ", mm, "\n")
-
+  
   new.file.name = paste0("LAPSE_RATE_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, ".sgrd")
   input.name = paste0("LAPSE_RATE/RAW/", tempERA.folder.name, new.file.name)
   input.name = sub(extension(input.name), "_coeff2.sgrd", input.name)
@@ -330,7 +314,7 @@ for (mm in 1:12)
                             , " -TARGET_DEFINITION=1"
                             , " -TARGET_TEMPLATE="
                             , paste0("\"", path.to.data, DEM_name, "\""))
-
+    
     system(system.command)
   }
 }
@@ -395,83 +379,159 @@ for (VAR in c(DEM_name, input.name.DEM.null))
 
 solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
-input.name.dem = DEM_name
+
+for (VAR in c(DEM_name, input.name.DEM.null))
+{
+  
+  input.name.dem = VAR
+  
+  for (mm in 1:12)
+  {
+    cat("\n ==> Correct solar radiation by clouds for month ", mm, "\n")
+    
+    # setwd(path.to.data)
+    
+    ## Total radiation
+    a.name = paste0("TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+    a.name = paste0(solar.folder.name, a.name)
+    if (length(grep("NULL", VAR)) > 0){
+      a.name = sub(extension(a.name), "_NULL.sgrd", a.name)
+    }
+    
+    ## Corrected cloud cover
+    b.name = paste0("CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+    b.name = paste0(clouds.folder.name, b.name)
+    b.name = sub(extension(b.name), "_regression_rescorr.sgrd", b.name)
+    
+    ## Corrected solar radiation
+    solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+    solarrad.name = paste0(solar.folder.name, solarrad.name)
+    if (length(grep("NULL", VAR)) > 0){
+      solarrad.name = sub(extension(solarrad.name), "_NULL.sgrd", solarrad.name)
+    }
+    
+    if (!file.exists(solarrad.name))
+    {
+      # a = raster(readGDAL(input.name.total))
+      # b = raster(readGDAL(b.name))
+      # 
+      # solarrad = a * (1 - 0.75 * (b / 10000) ^ 3.4)
+      # names(solarrad) = sub(extension(solarrad.name), "", basename(solarrad.name))
+      # writeRaster(solarrad, file = solarrad.name, overwrite = TRUE)
+      
+      input.name = c(a.name, b.name)
+      
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                              , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
+                              , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                              , paste0("\"", path.to.data, solarrad.name, "\"")
+                              , " -FORMULA=\"g1 * (1 - 0.75 * ((g2 / 10000) ^ 3.4))\""
+                              , " -NAME="
+                              , paste0("\"", sub(extension(solarrad.name), "", basename(solarrad.name)), "\"")
+                              , " -TYPE=7")
+      system(system.command) 
+    }
+  }
+}
+
+###################################################################
+### SOLAR RADIATION quotient
+###################################################################
 
 for (mm in 1:12)
 {
-  cat("\n ==> Correct solar radiation by clouds for month ", mm, "\n")
-
-  setwd(path.to.data)
+  cat("\n ==> Calculate quotient of solar radiation for month ", mm, "\n")
   
-  a = raster(readGDAL(paste0(solar.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sdat")))
-
-  b.name = paste0(clouds.folder.name, "CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
-  b.name = sub(extension(b.name), "_regression_rescorr.sdat", b.name)
-  b = raster(readGDAL(b.name))
-  
-  solarrad = a * (1 - 0.75 * (b / 10000) ^ 3.4)
+  ## Corrected solar radiation (DEM)
   solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
-  names(solarrad) = solarrad.name
   solarrad.name = paste0(solar.folder.name, solarrad.name)
-  writeRaster(solarrad, file = solarrad.name, overwrite = TRUE)
   
-  # setwd(path.to.SAGA)
-  #
-  # cat("\n ==> Calculate Land Surface Temperature for month ", mm, "\n")
-  #
-  # # output.name = paste0("TEMPERATURE/LST_", zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
-  # # 
-  # # if (!file.exists(paste0(path.to.data, output.name)))
-  # # {
-  # #   system.command = paste0(
-  # #     "saga_cmd ta_morphometry 13 -DEM="
-  # #     , paste0("\"", path.to.data, input.name.dem, "\"")
-  # #     , " -SWR="
-  # #     , paste0("\"", path.to.data, solarrad.name, "\"")
-  # #     , " -LAI="
-  # #     , paste0("\"", path.to.data, input.name.lai, "\"")
-  # #     , " -LST="
-  # #     , paste0("\"", path.to.data, output.name, "\"")
-  # #     , " -Z_REFERENCE=2250 -T_REFERENCE=0.000000 -T_GRADIENT=0.600000 -C_FACTOR=1.000000 -LAI_MAX=2.000000"
-  # #   )
-  # #   system(system.command)
-  # # }
-  # 
-  # input.name.lapse = paste0("LAPSE_RATE/ERAinterim_modelLevels_Temperature_2017_", mm, ".nc")
-  # input.ras = brick(paste0(path.to.data, input.name.lapse), level=1)
-  # input.name.lapse = sub(basename(input.name.lapse), paste0("LAPSE_RATE_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.lapse)
-  # input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
-  # 
-  # for (i in 1:3)
-  # {
-  #   cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for month ", mm, "\n")
-  #
-  #   input.name.temp = paste0("TEMPERATURE/CHELSA_", c("temp","tmax","tmin")[i], "10_", mm, "_1979-2013_V1.2_land.tif")
-  #   input.ras = raster(paste0(path.to.data, input.name.temp))
-  #   input.name.temp = sub(basename(input.name.temp), paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.temp)
-  #   
-  #   output.name = paste0("TEMPERATURE/LST_", c("MEAN_","MIN_","MAX_")[i], zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
-  #   
-  #   if (!file.exists(paste0(path.to.data, output.name)))
-  #   {
-  #     system.command = paste0(
-  #       "saga_cmd ta_morphometry 13 -DEM="
-  #       , paste0("\"", path.to.data, input.name.dem, "\"")
-  #       , " -SWR="
-  #       , paste0("\"", path.to.data, solarrad.name, "\"")
-  #       , " -LAI="
-  #       , paste0("\"", path.to.data, input.name.lai, "\"")
-  #       , " -LST="
-  #       , paste0("\"", path.to.data, output.name, "\"")
-  #       , " -Z_REFERENCE="
-  #       , paste0("\"", path.to.data, input.name.dem, "\"")
-  #       , " -T_REFERENCE="
-  #       , paste0("\"", path.to.data, input.name.temp, "\"")
-  #       , " -T_GRADIENT="
-  #       , paste0("\"", path.to.data, input.name.lapse, "\"")
-  #       , " -C_FACTOR=1.000000 -LAI_MAX=2.000000"
-  #     )
-  #     system(system.command)
-  #   }
-  # }
+  ## Corrected solar radiation (DEM NULL)
+  solarrad.name.NULL = sub(extension(solarrad.name), "_NULL.sgrd", solarrad.name)
+  
+  ## Quotient solar radiation (DEM NULL) / solar radiation (DEM)
+  quotient.name = paste0("Quotient_SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+  quotient.name = paste0(solar.folder.name, quotient.name)
+  
+  if (!file.exists(quotient.name))
+  {
+    input.name = c(solarrad.name, solarrad.name.NULL)
+    
+    system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                            , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
+                            , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                            , paste0("\"", path.to.data, quotient.name, "\"")
+                            , " -FORMULA=\"g2 / g1\""
+                            , " -NAME="
+                            , paste0("\"", sub(extension(quotient.name), "", basename(quotient.name)), "\"")
+                            , " -TYPE=7")
+    system(system.command) 
+    
+  }
 }
+
+
+
+
+
+# setwd(path.to.SAGA)
+#
+# cat("\n ==> Calculate Land Surface Temperature for month ", mm, "\n")
+#
+# # output.name = paste0("TEMPERATURE/LST_", zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
+# # 
+# # if (!file.exists(paste0(path.to.data, output.name)))
+# # {
+# #   system.command = paste0(
+# #     "saga_cmd ta_morphometry 13 -DEM="
+# #     , paste0("\"", path.to.data, input.name.dem, "\"")
+# #     , " -SWR="
+# #     , paste0("\"", path.to.data, solarrad.name, "\"")
+# #     , " -LAI="
+# #     , paste0("\"", path.to.data, input.name.lai, "\"")
+# #     , " -LST="
+# #     , paste0("\"", path.to.data, output.name, "\"")
+# #     , " -Z_REFERENCE=2250 -T_REFERENCE=0.000000 -T_GRADIENT=0.600000 -C_FACTOR=1.000000 -LAI_MAX=2.000000"
+# #   )
+# #   system(system.command)
+# # }
+# 
+# input.name.lapse = paste0("LAPSE_RATE/ERAinterim_modelLevels_Temperature_2017_", mm, ".nc")
+# input.ras = brick(paste0(path.to.data, input.name.lapse), level=1)
+# input.name.lapse = sub(basename(input.name.lapse), paste0("LAPSE_RATE_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.lapse)
+# input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
+# 
+# for (i in 1:3)
+# {
+#   cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for month ", mm, "\n")
+#
+#   input.name.temp = paste0("TEMPERATURE/CHELSA_", c("temp","tmax","tmin")[i], "10_", mm, "_1979-2013_V1.2_land.tif")
+#   input.ras = raster(paste0(path.to.data, input.name.temp))
+#   input.name.temp = sub(basename(input.name.temp), paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.temp)
+#   
+#   output.name = paste0("TEMPERATURE/LST_", c("MEAN_","MIN_","MAX_")[i], zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
+#   
+#   if (!file.exists(paste0(path.to.data, output.name)))
+#   {
+#     system.command = paste0(
+#       "saga_cmd ta_morphometry 13 -DEM="
+#       , paste0("\"", path.to.data, input.name.dem, "\"")
+#       , " -SWR="
+#       , paste0("\"", path.to.data, solarrad.name, "\"")
+#       , " -LAI="
+#       , paste0("\"", path.to.data, input.name.lai, "\"")
+#       , " -LST="
+#       , paste0("\"", path.to.data, output.name, "\"")
+#       , " -Z_REFERENCE="
+#       , paste0("\"", path.to.data, input.name.dem, "\"")
+#       , " -T_REFERENCE="
+#       , paste0("\"", path.to.data, input.name.temp, "\"")
+#       , " -T_GRADIENT="
+#       , paste0("\"", path.to.data, input.name.lapse, "\"")
+#       , " -C_FACTOR=1.000000 -LAI_MAX=2.000000"
+#     )
+#     system(system.command)
+#   }
+# }
+#   }
+# }
