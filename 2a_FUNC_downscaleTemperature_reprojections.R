@@ -10,7 +10,7 @@ library(ncdf4)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 zone_name.clouds = "World"
@@ -100,6 +100,16 @@ for (mm in 1:12)
                               , " -RESAMPLING=3") ## B-spline interpolation
       
       system(system.command)
+      
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                              , paste0("\"", path.to.data, output.name, "\"")
+                              , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                              , paste0("\"", path.to.data, output.name, "\"")
+                              , " -FORMULA=\"g1 / 10\""
+                              , " -NAME="
+                              , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
+                              , " -TYPE=7")
+      system(system.command) 
     }
   }
 }
@@ -213,7 +223,7 @@ new.folder.name = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution",
 for (mm in 1:12)
 {
   cat("\n ==> Compute lapse-rate (temperature ~ elevation level) for month ", mm, "\n")
-
+  
   input.name = paste0("ERAinterim_TEMP_MEAN_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm)
   input.name = paste0(input.name, "_LEVEL", 1:28)
   input.name = paste0(input.name, ".img")
@@ -225,7 +235,7 @@ for (mm in 1:12)
   output.name.2 = sub(extension(output.name), "_coeff2.sgrd", output.name)
   
   L60_model_levels = "ERA-interim_L60_model_levels.txt"
-
+  
   if (!file.exists(paste0(path.to.data, output.name.1)))
   {
     system.command = paste0("saga_cmd statistics_regression 9 -Y_GRIDS="
