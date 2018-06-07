@@ -1,0 +1,148 @@
+---
+title: 'CHELSA downscaling'
+author: "Maya Guéguen"
+date: "07/05/2018"
+
+output:
+  html_document:
+    toc: yes
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    number_sections: no
+    theme: cerulean
+    highlight: monochrome
+---
+
+<br/>
+<br/>
+
+# Glossary {.tabset .tabset-fade .tabset-pills} 
+
+- **DEM :** Digital Elevation Model,  
+3D CG representation of a terrain's surface created from a terrain's elevation data.
+
+- **GWR :** Geographically Weighted Regression,  
+outgrowth of ordinary least squares regression (OLS), allowing the relationships between the independent and dependent variables to vary by locality.
+
+- **SVF :** Sky View Factor,  
+ratio at a point in space between the visible sky and a hemisphere centered over the analyzed location (Oke 1981).
+
+- **LST :** Land Surface Temperature,
+
+- **SAGA commands :**
+    - **reproject : ** Geoprocessing &#8594; Projection &#8594; Coordinate Transformation
+    - **clip :**
+    - **clip and reproject :**
+    - **GWR :** Geoprocessing &#8594; Spatial and Geostatistics &#8594; Geographically Weighted Regression
+    - **regression :** Geoprocessing &#8594; Spatial and Geostatistics &#8594; Regression &#8594; Polynomial Trend from Grids
+    - **SVF :** Terrain analysis &#8594; Lighting &#8594; Sky View Factor
+    - **Solar radiation :** Terrain analysis &#8594; Lighting &#8594; Potential Incoming Solar radiation
+    - **LST :** Terrain analysis &#8594; Morphometry &#8594; Land Surface Temperature
+
+
+<br/>
+<br/>
+
+
+# Precipitation downscaling
+
+### To be done only once
+
+1. **Get data :** CHELSA monthly precipitation : [here](http://chelsa-climate.org/downloads/)
+
+2. **Reproject into equal area projection** (ETRS89) with B-spline interpolation
+
+<br/>
+
+### To do for each required area
+
+1. **Get data :** DEM
+
+2. **Reproject into equal area projection** (ETRS89) with B-spline interpolation
+
+3. **Clip** CHELSA monthly precipitation onto DEM
+
+4. **Compute Geographically Weighted Regression**
+    - of CHELSA monthly precipitation in function of DEM
+    - with residual correction
+
+<br/>
+<br/>
+
+
+
+# Temperature downscaling
+
+### To be done only once
+
+1. **Get data :** 
+    - CHELSA min/mean/max temperature : [here](http://chelsa-climate.org/downloads/)
+    - Earth Env monthly clouds coverage : [here](http://www.earthenv.org/cloud)
+    - ERA Interim monthly temperature of model levels from 60 to 33 : [here](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)  
+    - USGS and NGA DEM data (GMTED2010) : [here](https://lta.cr.usgs.gov/GMTED2010)
+
+<br/>
+
+2. **Reproject into angle conserving projection** (Mercator) with B-spline interpolation
+
+3. **Compute regression** to get Lapse rate
+    - of ERA Interim monthly temperature of model levels from 60 to 33 in function of elevation levels
+    - with a polynomial of order 1
+    - and keep the slope (coeff2)
+
+<br/>
+
+### To do for each required area
+
+1. **Get data :** DEM
+
+2. **Reproject into angle conserving projection** (Mercator) with B-spline interpolation
+
+<br/>
+
+3. **Clip** Earth Env monthly clouds coverage onto DEM
+
+4. **Compute Geographically Weighted Regression**
+    - of Earth Env monthly clouds coverage in function of DEM
+    - with residual correction
+    
+<br/>
+
+5. **Clip** CHELSA min/mean/max temperature onto DEM, **and downscale with B-spline interpolation**
+
+6. **Clip** Lapse rate onto DEM, **and downscale with B-spline interpolation**
+
+7. **Clip** GMTED2010 DEM onto DEM, **and downscale with B-spline interpolation**
+
+<br/>
+
+8. **Compute** Sky View factor with DEM
+
+9. **Compute** monthly solar radiation with DEM in function of Sky View factor
+
+10. **Correct** monthly solar radiation with clouds coverage :
+
+$$SolarRadiation = TotalRad * (1 - 0.75 * (\frac{clouds}{10000}) ^ {3.4})$$
+with $TotalRad = DiffuseRad + DirectRad$  
+and $TotalRad = \frac{TotalRad}{30}$ to have daily values.
+    
+<br/>
+
+11. **Compute** Land Surface Temperature :
+
+$$LST = TemperatureRef - 4.1 * LapseRate * \frac{(Elevation - ElevationRef)}{1000}$$
+$$+ Cst * (SolarRadiation - \frac{1}{SolarRadiation}) * (1 - \frac{LAI}{LAImax})$$
+with $LAI =$ Leaf Area Index  
+and $LAImax =$ cummulative LAI for all species in a grid cell from February to August
+
+<br/>
+<br/>
+
+# Citations
+
+- Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N., Peter L.H. & Kessler, M. (2016). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4. doi:10.1038/sdata.2017.122
+
+- [CHELSA](chelsa-climate.org)
+- [Earth Env](http://www.earthenv.org/)
+- [ERA Interim](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)
