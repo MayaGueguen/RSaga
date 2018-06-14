@@ -31,6 +31,8 @@ proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
 setwd(path.to.SAGA)
 
+# system("export SAGA_MLB=/home/gueguen/Documents/_SOFTWARES/SAGA_LST_Dirk/Release/")
+
 
 ###################################################################
 ### REPROJECT INPUT data (must be a conserving angle projection !!)
@@ -68,7 +70,7 @@ if (!file.exists(paste0(path.to.data, output.name)))
 
 ## LEAF AREA INDEX for LST calculation
 input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
-if(!file.exists(input.name.lai))
+if (!file.exists(paste0(path.to.data, input.name.lai)))
 {
   system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                           , paste0("\"", path.to.data, DEM_name, "\"")
@@ -82,7 +84,7 @@ if(!file.exists(input.name.lai))
 
 ## FLAT DEM (1)
 input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
-if(!file.exists(input.name.DEM.flat))
+if (!file.exists(paste0(path.to.data, input.name.DEM.flat)))
 {
   system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                           , paste0("\"", path.to.data, DEM_name, "\"")
@@ -461,7 +463,7 @@ for (mm in 1:12)
                             , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
                             , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
                             , paste0("\"", path.to.data, quotient.name, "\"")
-                            , " -FORMULA=\"g2 / g1\""
+                            , " -FORMULA=\"g1 / g2\""
                             , " -NAME="
                             , paste0("\"", sub(extension(quotient.name), "", basename(quotient.name)), "\"")
                             , " -TYPE=7")
