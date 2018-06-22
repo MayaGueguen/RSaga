@@ -226,11 +226,12 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 <li><p><strong>LST :</strong> Land Surface Temperature,</p></li>
 <li><strong>SAGA commands :</strong>
 <ul>
-<li><strong>reproject : </strong> Geoprocessing → Projection → Coordinate Transformation</li>
-<li><strong>clip :</strong></li>
+<li><strong>calculation : </strong> Grid → Calculus → Grid Calculator</li>
+<li><strong>reproject : </strong> (<em>Geoprocessing →</em>) Projection → Coordinate Transformation (Grid List)</li>
+<li><strong>clip :</strong> Grid → Grid System → Clip Grids</li>
 <li><strong>clip and reproject :</strong></li>
-<li><strong>GWR :</strong> Geoprocessing → Spatial and Geostatistics → Geographically Weighted Regression</li>
-<li><strong>regression :</strong> Geoprocessing → Spatial and Geostatistics → Regression → Polynomial Trend from Grids</li>
+<li><strong>GWR :</strong> (<em>Geoprocessing →</em>) Spatial and Geostatistics → Geographically Weighted Regression</li>
+<li><strong>regression :</strong> (<em>Geoprocessing →</em>) Spatial and Geostatistics → Regression → Polynomial Trend from Grids</li>
 <li><strong>SVF :</strong> Terrain analysis → Lighting → Sky View Factor</li>
 <li><strong>Solar radiation :</strong> Terrain analysis → Lighting → Potential Incoming Solar radiation</li>
 <li><strong>LST :</strong> Terrain analysis → Morphometry → Land Surface Temperature</li>
@@ -271,21 +272,35 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 <li><strong>Get data :</strong>
 <ul>
 <li>CHELSA min/mean/max temperature : <a href="http://chelsa-climate.org/downloads/">here</a></li>
-<li>Earth Env monthly clouds coverage : <a href="http://www.earthenv.org/cloud">here</a></li>
-<li>ERA Interim monthly temperature of model levels from 60 to 33 : <a href="http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/">here</a><br />
+<li>Earth Env monthly cloud cover : <a href="http://www.earthenv.org/cloud">here</a></li>
+<li>ERA Interim daily temperature (00:00 and 12:00) of model levels from 60 to 33 : <a href="http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/">here</a><br />
 </li>
 <li>USGS and NGA DEM data (GMTED2010) : <a href="https://lta.cr.usgs.gov/GMTED2010">here</a></li>
 </ul></li>
 </ol>
 <p><br /></p>
 <ol start="2" style="list-style-type: decimal">
-<li><p><strong>Reproject into angle conserving projection</strong> (Mercator) with B-spline interpolation</p></li>
+<li><p><strong>Compute mean by month and level</strong> for ERA Interim temperature</p></li>
+<li><strong>Reproject into angle conserving projection</strong> (Mercator) with B-spline interpolation :
+<ul>
+<li>CHELSA min/mean/max temperature</li>
+<li>Earth Env monthly cloud cover</li>
+<li>ERA Interim monthly temperature of model levels from 60 to 33</li>
+<li>USGS and NGA DEM data (GMTED2010)</li>
+</ul></li>
+</ol>
+<p><br /></p>
+<ol start="3" style="list-style-type: decimal">
 <li><strong>Compute regression</strong> to get Lapse rate
 <ul>
 <li>of ERA Interim monthly temperature of model levels from 60 to 33 in function of elevation levels</li>
 <li>with a polynomial of order 1</li>
 <li>and keep the slope (coeff2)</li>
 </ul></li>
+</ol>
+<p><br /></p>
+<ol start="4" style="list-style-type: decimal">
+<li><strong>Divide by 10</strong> CHELSA min/mean/max temperature to have degrees</li>
 </ol>
 <p><br /></p>
 </div>
@@ -297,33 +312,47 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 </ol>
 <p><br /></p>
 <ol start="3" style="list-style-type: decimal">
-<li><p><strong>Clip</strong> Earth Env monthly clouds coverage onto DEM</p></li>
+<li><p><strong>Clip</strong> Earth Env monthly cloud cover onto DEM</p></li>
 <li><strong>Compute Geographically Weighted Regression</strong>
 <ul>
-<li>of Earth Env monthly clouds coverage in function of DEM</li>
+<li>of Earth Env monthly cloud cover in function of DEM</li>
 <li>with residual correction</li>
 </ul></li>
 </ol>
 <p><br /></p>
 <ol start="5" style="list-style-type: decimal">
-<li><p><strong>Clip</strong> CHELSA min/mean/max temperature onto DEM, <strong>and downscale with B-spline interpolation</strong></p></li>
-<li><p><strong>Clip</strong> Lapse rate onto DEM, <strong>and downscale with B-spline interpolation</strong></p></li>
-<li><p><strong>Clip</strong> GMTED2010 DEM onto DEM, <strong>and downscale with B-spline interpolation</strong></p></li>
+<li><strong>Clip and downscale</strong> onto DEM with B-spline interpolation :
+<ul>
+<li>CHELSA min/mean/max temperature</li>
+<li>Lapse rate</li>
+<li>GMTED2010 DEM</li>
+</ul></li>
 </ol>
 <p><br /></p>
-<ol start="8" style="list-style-type: decimal">
-<li><p><strong>Compute</strong> Sky View factor with DEM</p></li>
-<li><p><strong>Compute</strong> monthly solar radiation with DEM in function of Sky View factor</p></li>
-<li><p><strong>Correct</strong> monthly solar radiation with clouds coverage :</p></li>
+<ol start="6" style="list-style-type: decimal">
+<li>For DEM and DEM-Flat (all values = 1) :
+<ul>
+<li><strong>Compute</strong> Sky View factor</li>
+<li><strong>Compute</strong> monthly solar radiation of DEM in function of Sky View factor</li>
+<li><strong>Correct</strong> monthly solar radiation with cloud cover :</li>
+</ul></li>
 </ol>
 <p><span class="math display">\[SolarRadiation = TotalRad * (1 - 0.75 * (\frac{clouds}{10000}) ^ {3.4})\]</span> with <span class="math inline">\(TotalRad = DiffuseRad + DirectRad\)</span><br />
-and <span class="math inline">\(TotalRad = \frac{TotalRad}{30}\)</span> to have daily values.</p>
+( and <span class="math inline">\(TotalRad = \frac{TotalRad}{30}\)</span> to have daily values )</p>
 <p><br /></p>
+<ol start="7" style="list-style-type: decimal">
+<li><strong>Compute</strong> quotient of solar radiation :</li>
+</ol>
+<p><span class="math display">\[quotientSolarRadiation = \frac{SolarRadiation(DEM)}{SolarRadiation(DEM Flat)}\]</span></p>
 <ol start="11" style="list-style-type: decimal">
 <li><strong>Compute</strong> Land Surface Temperature :</li>
 </ol>
-<p><span class="math display">\[LST = TemperatureRef - 4.1 * LapseRate * \frac{(Elevation - ElevationRef)}{1000}\]</span> <span class="math display">\[+ Cst * (SolarRadiation - \frac{1}{SolarRadiation}) * (1 - \frac{LAI}{LAImax})\]</span> with <span class="math inline">\(LAI =\)</span> Leaf Area Index<br />
-and <span class="math inline">\(LAImax =\)</span> cummulative LAI for all species in a grid cell from February to August</p>
+<span class="math display">\[\begin{align}
+LST =&amp; \text{ } TemperatureRef - 4.1 * LapseRate * \frac{(Elevation - ElevationRef)}{1000} \\
+&amp; + Cst * (quotientSolarRadiation - \frac{1}{quotientSolarRadiation}) * (1 - \frac{LAI}{LAImax})
+\end{align}\]</span>
+<p>with <span class="math inline">\(LAI = 0.01 =\)</span> Leaf Area Index<br />
+and <span class="math inline">\(LAImax = 10 =\)</span> cumulative LAI for all species in a grid cell from February to August</p>
 <p><br /> <br /></p>
 </div>
 </div>
@@ -333,7 +362,8 @@ and <span class="math inline">\(LAImax =\)</span> cummulative LAI for all specie
 <li><p>Karger, D.N., Conrad, O., Böhner, J., Kawohl, T., Kreft, H., Soria-Auza, R.W., Zimmermann, N., Peter L.H. &amp; Kessler, M. (2016). Climatologies at high resolution for the Earth land surface areas. Scientific Data. 4. <a href="doi:10.1038/sdata.2017.122" class="uri">doi:10.1038/sdata.2017.122</a></p></li>
 <li><a href="chelsa-climate.org">CHELSA</a></li>
 <li><a href="http://www.earthenv.org/">Earth Env</a></li>
-<li><p><a href="http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/">ERA Interim</a></p></li>
+<li><a href="http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/">ERA Interim</a></li>
+<li><p><a href="https://lta.cr.usgs.gov/GMTED2010">SGS and NGA DEM data (GMTED2010)</a></p></li>
 </ul>
 </div>
 

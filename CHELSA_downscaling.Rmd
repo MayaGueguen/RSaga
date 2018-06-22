@@ -31,11 +31,12 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 - **LST :** Land Surface Temperature,
 
 - **SAGA commands :**
-    - **reproject : ** Geoprocessing &#8594; Projection &#8594; Coordinate Transformation
-    - **clip :**
+    - **calculation : ** Grid &#8594; Calculus &#8594; Grid Calculator
+    - **reproject : ** (*Geoprocessing &#8594;*) Projection &#8594; Coordinate Transformation (Grid List)
+    - **clip :** Grid &#8594; Grid System &#8594; Clip Grids
     - **clip and reproject :**
-    - **GWR :** Geoprocessing &#8594; Spatial and Geostatistics &#8594; Geographically Weighted Regression
-    - **regression :** Geoprocessing &#8594; Spatial and Geostatistics &#8594; Regression &#8594; Polynomial Trend from Grids
+    - **GWR :** (*Geoprocessing &#8594;*) Spatial and Geostatistics &#8594; Geographically Weighted Regression
+    - **regression :** (*Geoprocessing &#8594;*) Spatial and Geostatistics &#8594; Regression &#8594; Polynomial Trend from Grids
     - **SVF :** Terrain analysis &#8594; Lighting &#8594; Sky View Factor
     - **Solar radiation :** Terrain analysis &#8594; Lighting &#8594; Potential Incoming Solar radiation
     - **LST :** Terrain analysis &#8594; Morphometry &#8594; Land Surface Temperature
@@ -78,18 +79,30 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 
 1. **Get data :** 
     - CHELSA min/mean/max temperature : [here](http://chelsa-climate.org/downloads/)
-    - Earth Env monthly clouds coverage : [here](http://www.earthenv.org/cloud)
-    - ERA Interim monthly temperature of model levels from 60 to 33 : [here](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)  
+    - Earth Env monthly cloud cover : [here](http://www.earthenv.org/cloud)
+    - ERA Interim daily temperature (00:00 and 12:00) of model levels from 60 to 33 : [here](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)  
     - USGS and NGA DEM data (GMTED2010) : [here](https://lta.cr.usgs.gov/GMTED2010)
 
 <br/>
 
-2. **Reproject into angle conserving projection** (Mercator) with B-spline interpolation
+2. **Compute mean by month and level** for ERA Interim temperature
+
+3. **Reproject into angle conserving projection** (Mercator) with B-spline interpolation :
+    - CHELSA min/mean/max temperature
+    - Earth Env monthly cloud cover
+    - ERA Interim monthly temperature of model levels from 60 to 33 
+    - USGS and NGA DEM data (GMTED2010)
+    
+<br/>
 
 3. **Compute regression** to get Lapse rate
     - of ERA Interim monthly temperature of model levels from 60 to 33 in function of elevation levels
     - with a polynomial of order 1
     - and keep the slope (coeff2)
+
+<br/>
+
+4. **Divide by 10** CHELSA min/mean/max temperature to have degrees
 
 <br/>
 
@@ -101,40 +114,46 @@ ratio at a point in space between the visible sky and a hemisphere centered over
 
 <br/>
 
-3. **Clip** Earth Env monthly clouds coverage onto DEM
+3. **Clip** Earth Env monthly cloud cover onto DEM
 
 4. **Compute Geographically Weighted Regression**
-    - of Earth Env monthly clouds coverage in function of DEM
+    - of Earth Env monthly cloud cover in function of DEM
     - with residual correction
     
 <br/>
 
-5. **Clip** CHELSA min/mean/max temperature onto DEM, **and downscale with B-spline interpolation**
-
-6. **Clip** Lapse rate onto DEM, **and downscale with B-spline interpolation**
-
-7. **Clip** GMTED2010 DEM onto DEM, **and downscale with B-spline interpolation**
+5. **Clip and downscale** onto DEM with B-spline interpolation :
+    - CHELSA min/mean/max temperature
+    - Lapse rate
+    - GMTED2010 DEM
 
 <br/>
 
-8. **Compute** Sky View factor with DEM
-
-9. **Compute** monthly solar radiation with DEM in function of Sky View factor
-
-10. **Correct** monthly solar radiation with clouds coverage :
+6. For DEM and DEM-Flat (all values = 1) :
+    - **Compute** Sky View factor
+    - **Compute** monthly solar radiation of DEM in function of Sky View factor
+    - **Correct** monthly solar radiation with cloud cover :
 
 $$SolarRadiation = TotalRad * (1 - 0.75 * (\frac{clouds}{10000}) ^ {3.4})$$
 with $TotalRad = DiffuseRad + DirectRad$  
-and $TotalRad = \frac{TotalRad}{30}$ to have daily values.
+( and $TotalRad = \frac{TotalRad}{30}$ to have daily values )
     
 <br/>
 
+7. **Compute** quotient of solar radiation :
+
+$$quotientSolarRadiation = \frac{SolarRadiation(DEM)}{SolarRadiation(DEM Flat)}$$
+
+
 11. **Compute** Land Surface Temperature :
 
-$$LST = TemperatureRef - 4.1 * LapseRate * \frac{(Elevation - ElevationRef)}{1000}$$
-$$+ Cst * (SolarRadiation - \frac{1}{SolarRadiation}) * (1 - \frac{LAI}{LAImax})$$
-with $LAI =$ Leaf Area Index  
-and $LAImax =$ cummulative LAI for all species in a grid cell from February to August
+\begin{align}
+LST =& \text{ } TemperatureRef - 4.1 * LapseRate * \frac{(Elevation - ElevationRef)}{1000} \\
+& + Cst * (quotientSolarRadiation - \frac{1}{quotientSolarRadiation}) * (1 - \frac{LAI}{LAImax})
+\end{align}
+
+with $LAI = 0.01 =$ Leaf Area Index  
+and $LAImax = 10 =$ cumulative LAI for all species in a grid cell from February to August
 
 <br/>
 <br/>
@@ -146,3 +165,5 @@ and $LAImax =$ cummulative LAI for all species in a grid cell from February to A
 - [CHELSA](chelsa-climate.org)
 - [Earth Env](http://www.earthenv.org/)
 - [ERA Interim](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)
+- [SGS and NGA DEM data (GMTED2010)](https://lta.cr.usgs.gov/GMTED2010)
+

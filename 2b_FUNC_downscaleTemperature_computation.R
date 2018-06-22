@@ -35,11 +35,20 @@ setwd(path.to.SAGA)
 
 
 ###################################################################
+### CREATE PATHWAYS and FILENAMES
+###################################################################
+
+zone.file.name = paste0(zone_name, "_", proj.name, "_resolution", proj.res)
+zone.folder.name = paste0(zone.file.name, "/")
+
+clouds.file.name = paste0(zone_name, "_", proj.name, "_resolution", proj.res.clouds)
+
+###################################################################
 ### REPROJECT INPUT data (must be a conserving angle projection !!)
 ###################################################################
 
 ### DEM
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+new.folder.name = paste0("../", zone.folder.name)
 if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
 {
   dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
@@ -47,7 +56,7 @@ if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
 
 input.name = DEM_name
 output.name = sub(basename(input.name)
-                  , paste0(new.folder.name, "DEM_", zone_name, "_", proj.name, "_resolution", proj.res,".sgrd")
+                  , paste0(new.folder.name, "DEM_", zone.file.name, ".sgrd")
                   , input.name)
 DEM_name = output.name
 
@@ -102,7 +111,7 @@ if (!file.exists(paste0(path.to.data, input.name.DEM.flat)))
 
 DEM_ras = raster(readGDAL(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name))))
 
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "/")
+new.folder.name = paste0("../", clouds.file.name, "/")
 if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name)))
 {
   dir.create(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name))
@@ -115,7 +124,7 @@ for (mm in 1:12)
   
   input.name = paste0("CLOUDS/", zone_name.clouds, "_", proj.name, "_resolution", proj.res.clouds, "/")
   input.name = paste0(input.name, "CLOUDS_", zone_name.clouds, "_", proj.name, "_resolution", proj.res.clouds, "_", mm, ".sgrd")
-  new.file.name = paste0("CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "_", mm, ".sgrd")
+  new.file.name = paste0("CLOUDS_", clouds.file.name, "_", mm, ".sgrd")
   output.name = sub(
     basename(input.name),
     paste0(new.folder.name, new.file.name),
@@ -144,8 +153,8 @@ for (mm in 1:12)
 ### GEOGRAPHICALLY weighted regression
 ###################################################################
 
-clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "/")
-new.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+clouds.folder.name = paste0("CLOUDS/", clouds.file.name, "/")
+new.folder.name = paste0("CLOUDS/", zone.folder.name)
 if (!dir.exists(paste0(path.to.data, new.folder.name)))
 {
   dir.create(paste0(path.to.data, new.folder.name))
@@ -158,7 +167,7 @@ for (mm in 1:12)
   
   predic.name = DEM_name
   
-  clouds.file.name = paste0("CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "_", mm, ".sgrd")
+  clouds.file.name = paste0("CLOUDS_", clouds.file.name, "_", mm, ".sgrd")
   input.name = paste0(clouds.folder.name, clouds.file.name)
   output.name = sub(proj.res.clouds, proj.res, clouds.file.name)
   output.name.1 = paste0(new.folder.name, sub(extension(output.name), "_regression.sgrd", output.name))
@@ -184,7 +193,7 @@ for (mm in 1:12)
 ### CLIP and REPROJECT INPUT data
 ###################################################################
 
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+new.folder.name = paste0("../", zone.folder.name)
 if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
 {
   dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
@@ -199,7 +208,7 @@ for (mm in 1:12)
     
     input.name = paste0("TEMPERATURE/", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "/")
     input.name = paste0(input.name, "TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_", mm, ".sgrd")
-    new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+    new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", mm, ".sgrd")
     output.name = sub(
       basename(input.name),
       paste0(new.folder.name, new.file.name),
@@ -224,7 +233,7 @@ for (mm in 1:12)
 
 ###################################################################
 
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+new.folder.name = paste0("../", zone.folder.name)
 if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
 {
   dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
@@ -234,7 +243,7 @@ cat("\n ==> Clip and downscale GMTED2010 DEM \n")
 
 input.name = paste0("DEM/", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, "/")
 input.name = paste0(input.name, "DEM_REF_", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, ".sgrd")
-new.file.name = paste0("DEM_REF_", zone_name, "_", proj.name, "_resolution", proj.res, ".sgrd")
+new.file.name = paste0("DEM_REF_", zone.file.name, ".sgrd")
 output.name = sub(
   basename(input.name),
   paste0(new.folder.name, new.file.name),
@@ -302,7 +311,7 @@ for (mm in 1:12)
   input.name = paste0("LAPSE_RATE/RAW/", tempERA.folder.name, new.file.name)
   input.name = sub(extension(input.name), "_coeff2.sgrd", input.name)
   
-  new.file.name = paste0("LAPSE_RATE_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+  new.file.name = paste0("LAPSE_RATE_", zone.file.name, "_", mm, ".sgrd")
   output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
   output.name = sub(extension(output.name), "_coeff2.sgrd", output.name)
   
@@ -401,12 +410,12 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
     }
     
     ## Corrected cloud cover
-    b.name = paste0("CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+    b.name = paste0("CLOUDS_", zone.file.name, "_", mm, ".sgrd")
     b.name = paste0(clouds.folder.name, b.name)
     b.name = sub(extension(b.name), "_regression_rescorr.sgrd", b.name)
     
     ## Corrected solar radiation
-    solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+    solarrad.name = paste0("SolarRadiation_", zone.file.name, "_", mm, ".sgrd")
     solarrad.name = paste0(solar.folder.name, solarrad.name)
     if (length(grep("FLAT", VAR)) > 0){
       solarrad.name = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
@@ -440,19 +449,21 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
 ### SOLAR RADIATION quotient
 ###################################################################
 
+solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+
 for (mm in 1:12)
 {
   cat("\n ==> Calculate quotient of solar radiation for month ", mm, "\n")
   
   ## Corrected solar radiation (DEM)
-  solarrad.name = paste0("SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+  solarrad.name = paste0("SolarRadiation_", zone.file.name, "_", mm, ".sgrd")
   solarrad.name = paste0(solar.folder.name, solarrad.name)
   
   ## Corrected solar radiation (DEM FLAT)
   solarrad.name.flat = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
   
-  ## Quotient solar radiation (DEM FLAT) / solar radiation (DEM)
-  quotient.name = paste0("Quotient_SolarRadiation_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, ".sgrd")
+  ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
+  quotient.name = paste0("Quotient_SolarRadiation_", zone.file.name, "_", mm, ".sgrd")
   quotient.name = paste0(solar.folder.name, quotient.name)
   
   if (!file.exists(quotient.name))
@@ -473,67 +484,99 @@ for (mm in 1:12)
 }
 
 
+###################################################################
+### LAND SURFACE TEMPERATURE computation
+###################################################################
 
-
-
-# setwd(path.to.SAGA)
-#
-# cat("\n ==> Calculate Land Surface Temperature for month ", mm, "\n")
-#
-# # output.name = paste0("TEMPERATURE/LST_", zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
-# # 
-# # if (!file.exists(paste0(path.to.data, output.name)))
-# # {
-# #   system.command = paste0(
-# #     "saga_cmd ta_morphometry 13 -DEM="
-# #     , paste0("\"", path.to.data, input.name.dem, "\"")
-# #     , " -SWR="
-# #     , paste0("\"", path.to.data, solarrad.name, "\"")
-# #     , " -LAI="
-# #     , paste0("\"", path.to.data, input.name.lai, "\"")
-# #     , " -LST="
-# #     , paste0("\"", path.to.data, output.name, "\"")
-# #     , " -Z_REFERENCE=2250 -T_REFERENCE=0.000000 -T_GRADIENT=0.600000 -C_FACTOR=1.000000 -LAI_MAX=2.000000"
-# #   )
-# #   system(system.command)
-# # }
+# ### WITH REFERENCE VALUES
 # 
-# input.name.lapse = paste0("LAPSE_RATE/ERAinterim_modelLevels_Temperature_2017_", mm, ".nc")
-# input.ras = brick(paste0(path.to.data, input.name.lapse), level=1)
-# input.name.lapse = sub(basename(input.name.lapse), paste0("LAPSE_RATE_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.lapse)
-# input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
-# 
-# for (i in 1:3)
+# for (mm in 1:12)
 # {
-#   cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for month ", mm, "\n")
-#
-#   input.name.temp = paste0("TEMPERATURE/CHELSA_", c("temp","tmax","tmin")[i], "10_", mm, "_1979-2013_V1.2_land.tif")
-#   input.ras = raster(paste0(path.to.data, input.name.temp))
-#   input.name.temp = sub(basename(input.name.temp), paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.temp, "_", proj.name, "_resolution", unique(res(input.ras)),"_", mm,".sgrd"), input.name.temp)
+#   cat("\n ==> Calculate Land Surface Temperature for month ", mm, "\n")
 #   
-#   output.name = paste0("TEMPERATURE/LST_", c("MEAN_","MIN_","MAX_")[i], zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
-#   
-#   if (!file.exists(paste0(path.to.data, output.name)))
-#   {
-#     system.command = paste0(
-#       "saga_cmd ta_morphometry 13 -DEM="
-#       , paste0("\"", path.to.data, input.name.dem, "\"")
-#       , " -SWR="
-#       , paste0("\"", path.to.data, solarrad.name, "\"")
-#       , " -LAI="
-#       , paste0("\"", path.to.data, input.name.lai, "\"")
-#       , " -LST="
-#       , paste0("\"", path.to.data, output.name, "\"")
-#       , " -Z_REFERENCE="
-#       , paste0("\"", path.to.data, input.name.dem, "\"")
-#       , " -T_REFERENCE="
-#       , paste0("\"", path.to.data, input.name.temp, "\"")
-#       , " -T_GRADIENT="
-#       , paste0("\"", path.to.data, input.name.lapse, "\"")
-#       , " -C_FACTOR=1.000000 -LAI_MAX=2.000000"
-#     )
-#     system(system.command)
-#   }
+#   # output.name = paste0("TEMPERATURE/LST_", zone_name, "_", proj.name, "_resolution", unique(res(b.ras)),"_", mm, ".sgrd")
+#   #
+#   # if (!file.exists(paste0(path.to.data, output.name)))
+#   # {
+#   #   system.command = paste0(
+#   #     "saga_cmd ta_morphometry 13 -DEM="
+#   #     , paste0("\"", path.to.data, input.name.dem, "\"")
+#   #     , " -SWR="
+#   #     , paste0("\"", path.to.data, solarrad.name, "\"")
+#   #     , " -LAI="
+#   #     , paste0("\"", path.to.data, input.name.lai, "\"")
+#   #     , " -LST="
+#   #     , paste0("\"", path.to.data, output.name, "\"")
+#   #     , " -Z_REFERENCE=2250 -T_REFERENCE=0.000000 -T_GRADIENT=0.600000 -C_FACTOR=1.000000 -LAI_MAX=2.000000"
+#   #   )
+#   #   system(system.command)
+#   # }
 # }
-#   }
-# }
+
+
+
+### WITH MAP VALUES
+  
+new.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "/")
+lst.folder.name = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name))
+}
+
+for (mm in 1:12)
+{
+  ## DEM
+  input.name.dem = DEM_name
+  
+  ## DEM REF (GMTED2010)
+  input.name.dem_REF = paste0("DEM_REF_", zone.file.name, ".sgrd")
+  input.name.dem_REF = paste0("DEM/", new.folder.name, input.name.dem_REF)
+
+  ## LAI
+  input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
+  
+  ## Lapse rate
+  input.name.lapse = paste0("LAPSE_RATE_", zone.file.name, ".sgrd")
+  input.name.lapse = paste0("LAPSE_RATE_/", new.folder.name, input.name.dem_REF)
+  input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
+  
+  ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
+  input.name.quotient = paste0("Quotient_SolarRadiation_", zone.file.name, "_", mm, ".sgrd")
+  input.name.quotient = paste0("SOLAR_RADIATION/", new.folder.name, input.name.quotient)
+  
+  for (i in 1:3)
+  {
+    cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for month ", mm, "\n")
+    
+    ## Temperature REF (CHELSA)
+    input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", mm, ".sgrd")
+    input.name.temp = paste0("TEMPERATURE/", new.folder.name, quotient.name)
+    
+    ## Land Surface Temperature
+    output.name = paste0("LST_", c("MEAN_","MIN_","MAX_")[i], zone.file.name, "_", mm, ".sgrd")
+    output.name = paste0(lst.folder.name, output.name)
+    
+    if (!file.exists(paste0(path.to.data, output.name)))
+    {
+      system.command = paste0(
+        "saga_cmd ta_morphometry 13 -DEM="
+        , paste0("\"", path.to.data, input.name.dem, "\"")
+        , " -SWR="
+        , paste0("\"", path.to.data, input.name.quotient, "\"")
+        , " -LAI="
+        , paste0("\"", path.to.data, input.name.lai, "\"")
+        , " -LST="
+        , paste0("\"", path.to.data, output.name, "\"")
+        , " -Z_REFERENCE="
+        , paste0("\"", path.to.data, input.name.dem_REF, "\"")
+        , " -T_REFERENCE="
+        , paste0("\"", path.to.data, input.name.temp, "\"")
+        , " -T_GRADIENT="
+        , paste0("\"", path.to.data, input.name.lapse, "\"")
+        , " -C_FACTOR=1.000000 -LAI_MAX=10.000000"
+      )
+      system(system.command)
+    }
+  }
+}
