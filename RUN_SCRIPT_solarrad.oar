@@ -1,0 +1,24 @@
+#!/bin/bash
+
+## OAR instructions ##
+#OAR -n CHELSA_solarrad
+#OAR --project teembio
+#OAR -l /nodes=1,walltime=150:00:00
+#OAR -O log_CHELSA_solarrad.%jobid%.stdout
+#OAR -E log_CHELSA_solarrad.%jobid%.stderr
+
+## define some bash options
+set -e ## exit the script as soon as a function return an error
+
+## load ciment environment and required modules
+source /applis/site/nix.sh
+
+## run our R script
+echo `date`
+R CMD BATCH "--args $1 $2" /bettik/mayagueguen/CHELSA_DOWNSCALING/RUN_SCRIPT_solarrad.R /dev/stdout
+echo `date`
+
+## quit the script
+exit $?
+
+## oarsub -S ./RUN_SCRIPT_solarrad.oar --array-param-file PARAMS_solarrad.txt -p "memcore >= 6"
