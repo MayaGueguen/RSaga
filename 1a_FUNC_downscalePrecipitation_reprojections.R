@@ -9,6 +9,8 @@ library(rgdal)
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
 path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
+path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
+path.to.SAGA = path.to.data
 
 zone_name.precip = "World"
 proj.res.precip = 1200

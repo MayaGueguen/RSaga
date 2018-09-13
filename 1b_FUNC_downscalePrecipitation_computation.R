@@ -1,11 +1,14 @@
 
 rm(list=ls())
+.libPaths("/bettik/emabio/R_PKG_NIX/")
 library(raster)
 library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
 path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.SAGA = path.to.data
+path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 setwd(path.to.data)
@@ -16,8 +19,8 @@ zone_name = "Bauges"
 DEM_name = "DEM/RAW/DEM_Bauges.img"
 # zone_name = "Lautaret"
 # DEM_name = "DEM/RAW/DEM_Lautaret.img"
-# zone_name = "Alps"
-# DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
+zone_name = "Alps"
+DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
 
 DEM_ras = raster(DEM_name)
 proj.res = unique(res(DEM_ras))

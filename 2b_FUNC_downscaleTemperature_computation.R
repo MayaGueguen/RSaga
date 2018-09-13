@@ -1,11 +1,16 @@
 
 rm(list=ls())
+.libPaths("/bettik/emabio/R_PKG_NIX/")
+# .libPaths("/home/mayagueguen/R_PKG_NIX/")
 library(raster)
 library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
 path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.SAGA = path.to.data
+path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
+# path.to.data = "/scratch/mayagueguen/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 setwd(path.to.data)
@@ -18,15 +23,17 @@ proj.res.tempCHELSA = 4000 ## DO NOT CHANGE !
 proj.res.tempERA = "100000" ## DO NOT CHANGE !
 proj.res.GMTED = 310 ## DO NOT CHANGE !
 
-zone_name = "Bauges"
-DEM_name = "DEM/RAW/DEM_Bauges.img"
+# zone_name = "Bauges"
+# DEM_name = "DEM/RAW/DEM_Bauges.img"
 # zone_name = "Lautaret"
 # DEM_name = "DEM/RAW/DEM_Lautaret.img"
-# zone_name = "Alps"
-# DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
+zone_name = "Alps"
+DEM_name = "DEM/RAW/DEM_Alps_ETRS89_resolution25.img"
+# zone_name = "FrenchAlps"
+# DEM_name = "DEM/RAW/DEM_FrenchAlps.img"
 
 DEM_ras = raster(DEM_name)
-proj.res = unique(res(DEM_ras))
+proj.res = unique(res(DEM_ras))[1]
 proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
 setwd(path.to.SAGA)
@@ -110,6 +117,10 @@ if (!file.exists(paste0(path.to.data, input.name.DEM.flat)))
 ###################################################################
 
 DEM_ras = raster(readGDAL(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name))))
+# ext_1 = 433960.5
+# ext_2 = 1951910.5
+# ext_3 = 5229567.5
+# ext_4 = 6236167.5
 
 new.folder.name = paste0("../", clouds.file.name, "/")
 if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name)))
@@ -145,6 +156,14 @@ for (mm in 1:12)
                             , extent(DEM_ras)[3]
                             , " -YMAX="
                             , extent(DEM_ras)[4])
+                            # , ext_1
+                            # , " -XMAX="
+                            # , ext_2 
+                            # , " -YMIN="
+                            # , ext_3
+                            # , " -YMAX="
+                            # , ext_4)
+    
     system(system.command) 
   }
 }
@@ -167,9 +186,9 @@ for (mm in 1:12)
   
   predic.name = DEM_name
   
-  clouds.file.name = paste0("CLOUDS_", clouds.file.name, "_", mm, ".sgrd")
-  input.name = paste0(clouds.folder.name, clouds.file.name)
-  output.name = sub(proj.res.clouds, proj.res, clouds.file.name)
+  input.name = paste0("CLOUDS_", clouds.file.name, "_", mm, ".sgrd")
+  input.name = paste0(clouds.folder.name, input.name)
+  output.name = sub(proj.res.clouds, proj.res, basename(input.name))
   output.name.1 = paste0(new.folder.name, sub(extension(output.name), "_regression.sgrd", output.name))
   output.name.2 = paste0(new.folder.name, sub(extension(output.name), "_regression_rescorr.sgrd", output.name))
   
@@ -269,7 +288,8 @@ if (!file.exists(paste0(path.to.data, output.name)))
 ###################################################################
 
 ### DEM or DEM FLAT
-for (VAR in c(DEM_name, input.name.DEM.flat))
+# for (VAR in c(DEM_name, input.name.DEM.flat))
+VAR = DEM_name
 {
   input.name = VAR
   output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
@@ -345,6 +365,7 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
   
   input.name.dem = VAR
   input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
+  if (VAR == input.name.DEM.flat) input.name.svf = VAR
   
   for (mm in 1:12)
   {
