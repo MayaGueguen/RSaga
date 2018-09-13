@@ -409,9 +409,12 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
       nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(2018, mm, dd),
                                               to = ISOdate(yy.end, mm.end, dd.end),
                                               by = "day"))) - 1
-      output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
-      output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
-      output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
+      # output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
+      # output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
+      # output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
+      output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+      output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+      output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
       if (length(grep("FLAT", VAR)) > 0){
         output.name.direct = sub(extension(output.name.direct), "_DEM_FLAT.sgrd", output.name.direct)
         output.name.diffus = sub(extension(output.name.diffus), "_DEM_FLAT.sgrd", output.name.diffus)
