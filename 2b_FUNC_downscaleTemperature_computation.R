@@ -390,7 +390,8 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
   
   for (mm in 1:12)
   {
-    for (dd in c(1, 10, 20))
+    # for (dd in c(1, 10, 20))
+    dd = 1
     {
       cat("\n ==> Calculate solar radiation for month ", mm, " from day ", dd, "\n")
       mm = as.numeric(mm)
@@ -403,9 +404,10 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
         mm.end = mm + 1
       }
       if (dd == 20 && mm == 12) mm.end = 1
+      yy.end = ifelse(mm == 12, 2019, 2018)
       
       nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(2018, mm, dd),
-                                              to = ISOdate(ifelse(mm == 12, 2019, 2018), mm.end, dd.end),
+                                              to = ISOdate(yy.end, mm.end, dd.end),
                                               by = "day"))) - 1
       output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
       output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
@@ -429,7 +431,7 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
                                 , paste0("\"", path.to.data, output.name.diffus, "\"")
                                 , " -GRD_TOTAL="
                                 , paste0("\"", path.to.data, output.name.total, "\"")
-                                , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm, "-", dd, " -DAY_STOP=2018-", mm.end, "-", dd + nb.days -1
+                                , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm, "-", dd, " -DAY_STOP=", yy.end, "-", mm.end, "-", dd + nb.days -1
                                 , " -DAYS_STEP=1")
         
         system(system.command)
