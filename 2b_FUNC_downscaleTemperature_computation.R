@@ -1,8 +1,8 @@
 
 rm(list=ls())
 
-# machine = "leca"
-machine = "luke"
+machine = "leca"
+# machine = "luke"
 # machine = "froggy"
 
 
@@ -24,6 +24,7 @@ if (machine == "leca")
   # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
   # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
   path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+  path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
 } else if (machine == "luke")
 {
   path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
@@ -177,13 +178,13 @@ for (mm in 1:12)
                             , extent(DEM_ras)[3]
                             , " -YMAX="
                             , extent(DEM_ras)[4])
-                            # , ext_1
-                            # , " -XMAX="
-                            # , ext_2 
-                            # , " -YMIN="
-                            # , ext_3
-                            # , " -YMAX="
-                            # , ext_4)
+    # , ext_1
+    # , " -XMAX="
+    # , ext_2 
+    # , " -YMIN="
+    # , ext_3
+    # , " -YMAX="
+    # , ext_4)
     
     system(system.command) 
   }
@@ -381,7 +382,9 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
   dir.create(paste0(path.to.data, new.folder.name))
 }
 
+input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
 for (VAR in c(DEM_name, input.name.DEM.flat))
+  # VAR = input.name.DEM.flat
 {
   
   input.name.dem = VAR
@@ -395,20 +398,26 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
     {
       cat("\n ==> Calculate solar radiation for month ", mm, " from day ", dd, "\n")
       mm = as.numeric(mm)
-      mm.end = mm
-      if (dd == 1) dd.end = 10
-      if (dd == 10) dd.end = 20
-      if (dd == 20)
-        {
-        dd.end = 1
-        mm.end = mm + 1
-      }
-      if (dd == 20 && mm == 12) mm.end = 1
+      mm.end = mm + 1
+      if (mm == 12) mm.end = 1
+      # mm.end = mm
+      # if (dd == 1) dd.end = 10
+      # if (dd == 10) dd.end = 20
+      # if (dd == 20)
+      # {
+      #   dd.end = 1
+      #   mm.end = mm + 1
+      # }
+      # if (dd == 20 && mm == 12) mm.end = 1
       yy.end = ifelse(mm == 12, 2019, 2018)
+      dd.end = 1
+      cat("STARTING POINT : ",ISOdate(2018, mm, dd), "\n")
+      cat("ENDING POINT : ",ISOdate(yy.end, mm.end, dd.end), "\n")
       
       nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(2018, mm, dd),
                                               to = ISOdate(yy.end, mm.end, dd.end),
                                               by = "day"))) - 1
+      cat("NB DAYS : ", nb.days, "\n")
       # output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
       # output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
       # output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", dd, ".sgrd")
@@ -434,8 +443,9 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
                                 , paste0("\"", path.to.data, output.name.diffus, "\"")
                                 , " -GRD_TOTAL="
                                 , paste0("\"", path.to.data, output.name.total, "\"")
-                                , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm, "-", dd, " -DAY_STOP=", yy.end, "-", mm.end, "-", dd + nb.days -1
+                                , " -LOCATION=1 -PERIOD=2 -DAY=2018-", mm, "-1 -DAY_STOP=2018-", mm, "-", nb.days # dd + nb.days -1
                                 , " -DAYS_STEP=1")
+        
         
         system(system.command)
       }
@@ -576,7 +586,7 @@ for (mm in 1:12)
 
 
 ### WITH MAP VALUES
-  
+
 new.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "/")
 lst.folder.name = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
 if (!dir.exists(paste0(path.to.data, lst.folder.name)))
@@ -592,7 +602,7 @@ for (mm in 1:12)
   ## DEM REF (GMTED2010)
   input.name.dem_REF = paste0("DEM_REF_", zone.file.name, ".sgrd")
   input.name.dem_REF = paste0("DEM/", new.folder.name, input.name.dem_REF)
-
+  
   ## LAI
   input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
   
