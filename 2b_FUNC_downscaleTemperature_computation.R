@@ -23,7 +23,7 @@ if (machine == "leca")
 {
   # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
   # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-  path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+  # path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
   path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
 } else if (machine == "luke")
 {
@@ -384,9 +384,7 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
 
 input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
 for (VAR in c(DEM_name, input.name.DEM.flat))
-  # VAR = input.name.DEM.flat
 {
-  
   input.name.dem = VAR
   input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
   if (VAR == input.name.DEM.flat) input.name.svf = VAR
@@ -463,7 +461,6 @@ clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", 
 
 for (VAR in c(DEM_name, input.name.DEM.flat))
 {
-  
   input.name.dem = VAR
   
   for (mm in 1:12)
@@ -621,31 +618,62 @@ for (mm in 1:12)
     
     ## Temperature REF (CHELSA)
     input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", mm, ".sgrd")
-    input.name.temp = paste0("TEMPERATURE/", new.folder.name, quotient.name)
+    input.name.temp = paste0("TEMPERATURE/", new.folder.name, input.name.temp)
     
     ## Land Surface Temperature
+    output.name.tmp = paste0("LST_", c("MEAN_","MIN_","MAX_")[i], zone.file.name, "_", mm, ".tmp.sgrd")
+    output.name.tmp = paste0(lst.folder.name, output.name.tmp)
+    
     output.name = paste0("LST_", c("MEAN_","MIN_","MAX_")[i], zone.file.name, "_", mm, ".sgrd")
     output.name = paste0(lst.folder.name, output.name)
     
     if (!file.exists(paste0(path.to.data, output.name)))
     {
-      system.command = paste0(
-        "saga_cmd ta_morphometry 13 -DEM="
-        , paste0("\"", path.to.data, input.name.dem, "\"")
-        , " -SWR="
-        , paste0("\"", path.to.data, input.name.quotient, "\"")
-        , " -LAI="
-        , paste0("\"", path.to.data, input.name.lai, "\"")
-        , " -LST="
-        , paste0("\"", path.to.data, output.name, "\"")
-        , " -Z_REFERENCE="
-        , paste0("\"", path.to.data, input.name.dem_REF, "\"")
-        , " -T_REFERENCE="
-        , paste0("\"", path.to.data, input.name.temp, "\"")
-        , " -T_GRADIENT="
-        , paste0("\"", path.to.data, input.name.lapse, "\"")
-        , " -C_FACTOR=1.000000 -LAI_MAX=10.000000"
-      )
+      # system.command = paste0(
+      #   "saga_cmd ta_morphometry 13 -DEM="
+      #   , paste0("\"", path.to.data, input.name.dem, "\"")
+      #   , " -SWR="
+      #   , paste0("\"", path.to.data, input.name.quotient, "\"")
+      #   , " -LAI="
+      #   , paste0("\"", path.to.data, input.name.lai, "\"")
+      #   , " -LST="
+      #   , paste0("\"", path.to.data, output.name, "\"")
+      #   , " -Z_REFERENCE="
+      #   , paste0("\"", path.to.data, input.name.dem_REF, "\"")
+      #   , " -T_REFERENCE="
+      #   , paste0("\"", path.to.data, input.name.temp, "\"")
+      #   , " -T_GRADIENT="
+      #   , paste0("\"", path.to.data, input.name.lapse, "\"")
+      #   , " -C_FACTOR=1.000000 -LAI_MAX=10.000000"
+      # )
+      # system(system.command)
+      
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                              , paste0("\"",
+                                       input.name.dem,
+                                       ";",
+                                       input.name.lapse,
+                                       ";",
+                                       input.name.dem_REF,
+                                       ";",
+                                       input.name.temp,
+                                       "\"")
+                              , " -RESULT="
+                              , paste0("\"", output.name.tmp, "\"")
+                              , " -FORMULA=\"d-b*(a-c)\""
+                              , " -NAME="
+                              , paste0("\"", output.name.tmp, "\"")
+                              , " -TYPE=7")
+      system(system.command)
+      
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                              , paste0("\"",output.name.tmp,";",input.name.quotient, "\"")
+                              , " -RESULT="
+                              , paste0("\"", output.name, "\"")
+                              , " -FORMULA=\"a+1*(b-1/b)*(1-0.01/8)\""
+                              , " -NAME="
+                              , paste0("\"", output.name, "\"")
+                              , " -TYPE=7")
       system(system.command)
     }
   }
