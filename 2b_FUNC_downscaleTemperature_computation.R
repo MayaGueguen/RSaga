@@ -24,7 +24,7 @@ if (machine == "leca")
   # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
   # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
   # path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
-  path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
+  path.to.data = "K:/LECA/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 } else if (machine == "luke")
 {
   path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
@@ -33,6 +33,7 @@ if (machine == "leca")
   path.to.data = "/scratch/mayagueguen/CHELSA_DOWNSCALING/"
 }
 path.to.SAGA = path.to.data
+path.to.SAGA = "C:/Users/renaud/Downloads/saga-7.2.0_x64/"
 
 
 setwd(path.to.data)
@@ -604,8 +605,8 @@ for (mm in 1:12)
   input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
   
   ## Lapse rate
-  input.name.lapse = paste0("LAPSE_RATE_", zone.file.name, ".sgrd")
-  input.name.lapse = paste0("LAPSE_RATE_/", new.folder.name, input.name.dem_REF)
+  input.name.lapse = paste0("LAPSE_RATE_", zone.file.name, "_", mm, ".sgrd")
+  input.name.lapse = paste0("LAPSE_RATE/", new.folder.name, input.name.lapse)
   input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
   
   ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
@@ -614,17 +615,17 @@ for (mm in 1:12)
   
   for (i in 1:3)
   {
-    cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for month ", mm, "\n")
+    cat("\n ==> Calculate ", c("MIN","MEAN","MAX")[i], " Land Surface Temperature for month ", mm, "\n")
     
     ## Temperature REF (CHELSA)
-    input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", mm, ".sgrd")
+    input.name.temp = paste0("TEMP_", c("MIN","MEAN","MAX")[i], "_", zone.file.name, "_", mm, ".sgrd")
     input.name.temp = paste0("TEMPERATURE/", new.folder.name, input.name.temp)
     
     ## Land Surface Temperature
-    output.name.tmp = paste0("LST_", c("MEAN_","MIN_","MAX_")[i], zone.file.name, "_", mm, ".tmp.sgrd")
+    output.name.tmp = paste0("LST_", c("MIN_","MEAN_","MAX_")[i], zone.file.name, "_", mm, ".tmp.sgrd")
     output.name.tmp = paste0(lst.folder.name, output.name.tmp)
     
-    output.name = paste0("LST_", c("MEAN_","MIN_","MAX_")[i], zone.file.name, "_", mm, ".sgrd")
+    output.name = paste0("LST_", c("MIN_","MEAN_","MAX_")[i], zone.file.name, "_", mm, ".sgrd")
     output.name = paste0(lst.folder.name, output.name)
     
     if (!file.exists(paste0(path.to.data, output.name)))
@@ -648,7 +649,10 @@ for (mm in 1:12)
       # )
       # system(system.command)
       
-      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+      setwd(path.to.data)
+      
+      system.command = paste0(path.to.SAGA
+                              , "saga_cmd grid_calculus 1 -GRIDS="
                               , paste0("\"",
                                        input.name.dem,
                                        ";",
@@ -666,7 +670,8 @@ for (mm in 1:12)
                               , " -TYPE=7")
       system(system.command)
       
-      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+      system.command = paste0(path.to.SAGA
+                              , "saga_cmd grid_calculus 1 -GRIDS="
                               , paste0("\"",output.name.tmp,";",input.name.quotient, "\"")
                               , " -RESULT="
                               , paste0("\"", output.name, "\"")
