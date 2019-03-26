@@ -74,7 +74,7 @@ if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
   dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
 }
 
-### CHELSA Temperature : mean, max, min
+### CHELSA Temperature : mean, max, min : CURRENT
 for (mm in 1:12)
 {
   for (i in 1:3)

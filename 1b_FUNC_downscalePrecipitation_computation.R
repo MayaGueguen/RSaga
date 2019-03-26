@@ -13,7 +13,8 @@ path.to.SAGA = path.to.data
 
 setwd(path.to.data)
 zone_name.precip = "World" ## DO NOT CHANGE !
-proj.res.precip = 1200  ## DO NOT CHANGE !
+# proj.res.precip = 1200  ## DO NOT CHANGE !
+proj.res.precip = 850  ## DO NOT CHANGE !
 
 zone_name = "Bauges"
 DEM_name = "DEM/RAW/DEM_Bauges.img"
@@ -26,6 +27,11 @@ DEM_ras = raster(DEM_name)
 proj.res = unique(res(DEM_ras))
 proj.name = "ETRS89"
 proj.value = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs "
+
+fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
+fut.rcp = c("45", "85")
+fut.years = c("2061-2080")
+
 setwd(path.to.SAGA)
 
 
@@ -76,12 +82,13 @@ if (!dir.exists(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.fol
   dir.create(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name)))
 }
 
-### Monthly precipitations
+### Monthly precipitations : CURRENT
 for (mm in 1:12)
 {
   cat("\n ==> Clip CHELSA precipitations for month ", mm, "\n")
   
-  precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".sgrd")
+  # precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".sgrd")
+  precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".tif")
   input.name = paste0(precip.folder.name, precip.file.name)
   output.name = paste0(sub(zone_name.precip, zone_name, precip.folder.name),
                        sub(zone_name.precip, zone_name, precip.file.name))
@@ -102,6 +109,48 @@ for (mm in 1:12)
                             , extent(DEM_ras)[4]
                             , " -BUFFER=0.000000")
     system(system.command)
+  }
+}
+
+
+### Monthly precipitations : FUTURE
+for (sce in fut.scenarios)
+{
+  for (rcp in fut.rcp)
+  {
+    for (ye in fut.years)
+    {
+      for (mm in 1:12)
+      {
+        cat("\n ==> Clip CHELSA precipitations for month ", mm, "\n")
+        
+        # precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
+        #                           , sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+        precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
+                               , sce, "_rcp", rcp, "_", mm, "_", ye, ".tif")
+        input.name = paste0(precip.folder.name, precip.file.name)
+        output.name = paste0(sub(zone_name.precip, zone_name, precip.folder.name),
+                             sub(zone_name.precip, zone_name, precip.file.name))
+        
+        if (!file.exists(paste0(path.to.data, output.name)))
+        {
+          system.command = paste0("saga_cmd grid_tools 31 -GRIDS="
+                                  , paste0("\"", path.to.data, input.name, "\"")
+                                  , " -CLIPPED="
+                                  , paste0("\"", path.to.data, output.name, "\"")
+                                  , " -EXTENT=0 -XMIN="
+                                  , extent(DEM_ras)[1]
+                                  , " -XMAX="
+                                  , extent(DEM_ras)[2]
+                                  , " -YMIN="
+                                  , extent(DEM_ras)[3]
+                                  , " -YMAX="
+                                  , extent(DEM_ras)[4]
+                                  , " -BUFFER=0.000000")
+          system(system.command)
+        }
+      }
+    }
   }
 }
 
