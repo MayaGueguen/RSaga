@@ -1,23 +1,22 @@
 
 rm(list=ls())
-.libPaths("/bettik/emabio/R_PKG_NIX/")
+# .libPaths("/bettik/emabio/R_PKG_NIX/")
 library(raster)
 library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/run/user/30241/gvfs/smb-share:server=129.88.191.70,share=equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
-path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
-path.to.SAGA = path.to.data
+# path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
+# path.to.SAGA = path.to.data
 
 setwd(path.to.data)
 zone_name.precip = "World" ## DO NOT CHANGE !
-# proj.res.precip = 1200  ## DO NOT CHANGE !
 proj.res.precip = 850  ## DO NOT CHANGE !
 
-zone_name = "Bauges"
-DEM_name = "DEM/RAW/DEM_Bauges.img"
+# zone_name = "Bauges"
+# DEM_name = "DEM/RAW/DEM_Bauges.img"
 # zone_name = "Lautaret"
 # DEM_name = "DEM/RAW/DEM_Lautaret.img"
 zone_name = "Alps"
@@ -74,7 +73,7 @@ if (!file.exists(paste0(path.to.data, output.name)))
 ### CLIP INPUT data
 ###################################################################
 
-DEM_ras = raster(readGDAL(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name))))
+DEM_ras = raster(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name)))
 
 precip.folder.name = paste0("PRECIPITATION/", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "/")
 if (!dir.exists(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name))))
@@ -87,7 +86,6 @@ for (mm in 1:12)
 {
   cat("\n ==> Clip CHELSA precipitations for month ", mm, "\n")
   
-  # precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".sgrd")
   precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".tif")
   input.name = paste0(precip.folder.name, precip.file.name)
   output.name = paste0(sub(zone_name.precip, zone_name, precip.folder.name),
@@ -113,6 +111,12 @@ for (mm in 1:12)
 }
 
 
+precip.folder.name = paste0("PRECIPITATION/", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name))))
+{
+  dir.create(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name)))
+}
+
 ### Monthly precipitations : FUTURE
 for (sce in fut.scenarios)
 {
@@ -122,10 +126,8 @@ for (sce in fut.scenarios)
     {
       for (mm in 1:12)
       {
-        cat("\n ==> Clip CHELSA precipitations for month ", mm, "\n")
+        cat("\n ==> Clip CHELSA precipitations for ", sce, rcp, ye, " and month ", mm, "\n")
         
-        # precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
-        #                           , sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
         precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
                                , sce, "_rcp", rcp, "_", mm, "_", ye, ".tif")
         input.name = paste0(precip.folder.name, precip.file.name)
