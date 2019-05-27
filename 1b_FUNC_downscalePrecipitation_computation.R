@@ -167,7 +167,7 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
   dir.create(paste0(path.to.data, new.folder.name))
 }
 
-### Monthly precipitations in function of DEM
+### Monthly precipitations in function of DEM : CURRENT
 for (mm in 1:12)
 {
   cat("\n ==> GWR of CHELSA precipitations in function of DEM for month ", mm, "\n")
@@ -198,3 +198,48 @@ for (mm in 1:12)
 ### Not good enough ? Maybe try :
 ### Clouds in function of DEM
 ### Monthly precipitations in function of DEM and Clouds
+
+precip.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res.precip, "_FUTURE/")
+new.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, new.folder.name)))
+{
+  dir.create(paste0(path.to.data, new.folder.name))
+}
+
+### Monthly precipitations in function of DEM : FUTURE
+for (sce in fut.scenarios)
+{
+  for (rcp in fut.rcp)
+  {
+    for (ye in fut.years)
+    {
+      for (mm in 1:12)
+      {
+        cat("\n ==> GWR of CHELSA precipitations in function of DEM for ", sce, rcp, ye, " and month ", mm, "\n")
+        
+        predic.name = DEM_name
+        
+        precip.file.name = paste0("PRECIP_", zone_name, "_", proj.name, "_resolution", proj.res.precip, "_"
+                                  , sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+        input.name = paste0(precip.folder.name, precip.file.name)
+        output.name = sub(proj.res.precip, proj.res, precip.file.name)
+        output.name.1 = paste0(new.folder.name, sub(extension(output.name), "_regression.sgrd", output.name))
+        output.name.2 = paste0(new.folder.name, sub(extension(output.name), "_regression_rescorr.sgrd", output.name))
+        
+        if (!file.exists(paste0(path.to.data, output.name.1)))
+        {
+          system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
+                                  , paste0("\"", path.to.data, predic.name, "\"")
+                                  , " -REGRESSION="
+                                  , paste0("\"", path.to.data, output.name.1, "\"")
+                                  , " -REG_RESCORR="
+                                  , paste0("\"", path.to.data, output.name.2, "\"")
+                                  , " -DEPENDENT="
+                                  , paste0("\"", path.to.data, input.name, "\""))
+          
+          system(system.command) 
+        }
+      }
+    }
+  }
+}
