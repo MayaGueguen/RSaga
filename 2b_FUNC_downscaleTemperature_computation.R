@@ -24,8 +24,9 @@ if (machine == "leca")
   # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
   # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
   # path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
-  path.to.data = "K:/LECA/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
-  path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
+  # path.to.data = "K:/LECA/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+  # path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
+  path.to.data = "/run/user/30241/gvfs/smb-share:server=129.88.191.70,share=equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 } else if (machine == "luke")
 {
   path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
@@ -63,6 +64,10 @@ proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +
 setwd(path.to.SAGA)
 
 # system("export SAGA_MLB=/home/gueguen/Documents/_SOFTWARES/SAGA_LST_Dirk/Release/")
+
+fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
+fut.rcp = c("45", "85")
+fut.years = c("2061-2080")
 
 
 ###################################################################
@@ -140,7 +145,7 @@ if (!file.exists(paste0(path.to.data, input.name.DEM.flat)))
 ### CLIP INPUT data
 ###################################################################
 
-DEM_ras = raster(readGDAL(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name))))
+DEM_ras = raster(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name)))
 # ext_1 = 433960.5
 # ext_2 = 1951910.5
 # ext_3 = 5229567.5
@@ -242,7 +247,7 @@ if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
   dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
 }
 
-### CHELSA Temperature : mean, max, min
+### CHELSA Temperature : mean, max, min : CURRENT
 for (mm in 1:12)
 {
   for (i in 1:3)
@@ -270,6 +275,55 @@ for (mm in 1:12)
                               , paste0("\"", path.to.data, DEM_name, "\""))
       
       system(system.command) 
+    }
+  }
+}
+
+new.folder.name = paste0("../", sub("/$", "", zone.folder.name), "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+}
+
+### CHELSA Temperature : mean, max, min : FUTURE
+for (sce in fut.scenarios)
+{
+  for (rcp in fut.rcp)
+  {
+    for (ye in fut.years)
+    {
+      for (mm in 1:12)
+      {
+        for (i in 1:3)
+        {
+          cat("\n ==> Clip and downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          input.name = paste0("TEMPERATURE/", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_FUTURE/")
+          input.name = paste0(input.name, "TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA
+                              , "_", proj.name, "_resolution", proj.res.tempCHELSA
+                              , "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = sub(
+            basename(input.name),
+            paste0(new.folder.name, new.file.name),
+            input.name
+          )
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                                    , paste0("\"", path.to.data, input.name, "\"")
+                                    , " -OUTPUT="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -SCALE_DOWN=3"
+                                    , " -TARGET_DEFINITION=1"
+                                    , " -TARGET_TEMPLATE="
+                                    , paste0("\"", path.to.data, DEM_name, "\""))
+            
+            system(system.command) 
+          }
+        }
+      }
     }
   }
 }
