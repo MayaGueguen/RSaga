@@ -7,10 +7,11 @@ library(rgdal)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
+# path.to.data = "/media/gueguen/equipes/emabio/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/run/user/30241/gvfs/smb-share:server=129.88.191.70,share=equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
-path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
-path.to.SAGA = path.to.data
+# path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
+# path.to.SAGA = path.to.data
 
 zone_name.precip = "World"
 proj.res.precip = 1200

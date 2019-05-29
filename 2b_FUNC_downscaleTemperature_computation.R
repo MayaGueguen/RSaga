@@ -25,6 +25,7 @@ if (machine == "leca")
   # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
   # path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
   path.to.data = "K:/LECA/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+  path.to.data = "/home/gueguen/Bureau/CHELSA_DOWNSCALING/"
 } else if (machine == "luke")
 {
   path.to.data = "/bettik/mayagueguen/CHELSA_DOWNSCALING/"
@@ -33,7 +34,7 @@ if (machine == "leca")
   path.to.data = "/scratch/mayagueguen/CHELSA_DOWNSCALING/"
 }
 path.to.SAGA = path.to.data
-path.to.SAGA = "C:/Users/renaud/Downloads/saga-7.2.0_x64/"
+# path.to.SAGA = "C:/Users/renaud/Downloads/saga-7.2.0_x64/"
 
 
 setwd(path.to.data)
