@@ -10,7 +10,8 @@ library(ncdf4)
 
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
-path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+# path.to.data = "/media/gueguen/equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/run/user/30241/gvfs/smb-share:server=129.88.191.70,share=equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 zone_name.clouds = "World"
@@ -23,6 +24,10 @@ proj.res.tempERA = "100000"
 proj.res.GMTED = "310"
 proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
+
+fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
+fut.rcp = c("45", "85")
+fut.years = c("2061-2080")
 
 setwd(path.to.SAGA)
 
@@ -110,6 +115,63 @@ for (mm in 1:12)
                               , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
                               , " -TYPE=7")
       system(system.command) 
+    }
+  }
+}
+
+new.folder.name = paste0("../", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+}
+
+### CHELSA Temperature : mean, max, min : FUTURE
+for (sce in fut.scenarios)
+{
+  for (rcp in fut.rcp)
+  {
+    for (ye in fut.years)
+    {
+      for (mm in 1:12)
+      {
+        for (i in 1:3)
+        {
+          cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          input.name = paste0("TEMPERATURE/RAW_FUTURE/CHELSA_", c("tas","tasmax","tasmin")[i]
+                              , "_mon_", sce, "_rcp", rcp, "_r1i1p1_g025.nc_", mm, "_", ye, "_V1.2.tif")
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_", proj.name
+                                 , "_resolution", proj.res.tempCHELSA, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = sub(
+            basename(input.name),
+            paste0(new.folder.name, new.file.name),
+            input.name
+          )
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
+                                    , paste0("\"", proj.value, "\"")
+                                    , " -SOURCE="
+                                    , paste0("\"", path.to.data, input.name, "\"")
+                                    , " -GRIDS="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -RESAMPLING=3") ## B-spline interpolation
+            
+            system(system.command)
+            
+            system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -FORMULA=\"g1 / 10\""
+                                    , " -NAME="
+                                    , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
+                                    , " -TYPE=7")
+            system(system.command) 
+          }
+        }
+      }
     }
   }
 }
