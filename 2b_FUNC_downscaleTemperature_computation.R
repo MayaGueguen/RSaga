@@ -294,7 +294,7 @@ for (sce in fut.scenarios)
     {
       for (mm in 1:12)
       {
-        for (i in 1:3)
+        for (i in 2:3)
         {
           cat("\n ==> Clip and downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
           
@@ -638,7 +638,7 @@ for (mm in 1:12)
 
 
 
-### WITH MAP VALUES
+### WITH MAP VALUES : CURRENT
 
 new.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "/")
 lst.folder.name = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
@@ -706,8 +706,7 @@ for (mm in 1:12)
       
       setwd(path.to.data)
       
-      system.command = paste0(path.to.SAGA
-                              , "saga_cmd grid_calculus 1 -GRIDS="
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                               , paste0("\"",
                                        input.name.dem,
                                        ";",
@@ -725,8 +724,7 @@ for (mm in 1:12)
                               , " -TYPE=7")
       system(system.command)
       
-      system.command = paste0(path.to.SAGA
-                              , "saga_cmd grid_calculus 1 -GRIDS="
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                               , paste0("\"",output.name.tmp,";",input.name.quotient, "\"")
                               , " -RESULT="
                               , paste0("\"", output.name, "\"")
@@ -735,6 +733,101 @@ for (mm in 1:12)
                               , paste0("\"", output.name, "\"")
                               , " -TYPE=7")
       system(system.command)
+    }
+  }
+}
+
+
+### WITH MAP VALUES : FUTURE
+
+raw.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "/")
+new.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "_FUTURE/")
+lst.folder.name = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name))
+}
+
+for (sce in fut.scenarios)
+{
+  for (rcp in fut.rcp)
+  {
+    for (ye in fut.years)
+    {
+      for (mm in 1:12)
+      {
+        ## DEM
+        input.name.dem = DEM_name
+        
+        ## DEM REF (GMTED2010)
+        input.name.dem_REF = paste0("DEM_REF_", zone.file.name, ".sgrd")
+        input.name.dem_REF = paste0("DEM/", raw.folder.name, input.name.dem_REF)
+        
+        ## LAI
+        input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
+        
+        ## Lapse rate
+        input.name.lapse = paste0("LAPSE_RATE_", zone.file.name, "_", mm, ".sgrd")
+        input.name.lapse = paste0("LAPSE_RATE/", raw.folder.name, input.name.lapse)
+        input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
+        
+        ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
+        input.name.quotient = paste0("Quotient_SolarRadiation_", zone.file.name, "_", mm, ".sgrd")
+        input.name.quotient = paste0("SOLAR_RADIATION/", raw.folder.name, input.name.quotient)
+        
+        # for (i in 1:3)
+        for (i in c(1,3))
+        {
+          cat("\n ==> Calculate ", c("MIN","MEAN","MAX")[i], " Land Surface Temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          ## Temperature REF (CHELSA)
+          input.name.temp = paste0("TEMP_", c("MIN","MEAN","MAX")[i], "_", zone.file.name
+                                   , "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          input.name.temp = paste0("TEMPERATURE/", new.folder.name, input.name.temp)
+          
+          ## Land Surface Temperature
+          output.name.tmp = paste0("LST_", c("MIN_","MEAN_","MAX_")[i], zone.file.name
+                                   , "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".tmp.sgrd")
+          output.name.tmp = paste0(lst.folder.name, output.name.tmp)
+          
+          output.name = paste0("LST_", c("MIN_","MEAN_","MAX_")[i], zone.file.name
+                               , "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = paste0(lst.folder.name, output.name)
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            setwd(path.to.data)
+            
+            system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                    , paste0("\"",
+                                             input.name.dem,
+                                             ";",
+                                             input.name.lapse,
+                                             ";",
+                                             input.name.dem_REF,
+                                             ";",
+                                             input.name.temp,
+                                             "\"")
+                                    , " -RESULT="
+                                    , paste0("\"", output.name.tmp, "\"")
+                                    , " -FORMULA=\"d-b*(a-c)\""
+                                    , " -NAME="
+                                    , paste0("\"", output.name.tmp, "\"")
+                                    , " -TYPE=7")
+            system(system.command)
+            
+            system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                    , paste0("\"",output.name.tmp,";",input.name.quotient, "\"")
+                                    , " -RESULT="
+                                    , paste0("\"", output.name, "\"")
+                                    , " -FORMULA=\"a+1*(b-1/b)*(1-0.01/8)\""
+                                    , " -NAME="
+                                    , paste0("\"", output.name, "\"")
+                                    , " -TYPE=7")
+            system(system.command)
+          }
+        }
+      }
     }
   }
 }
