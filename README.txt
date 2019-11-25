@@ -2,6 +2,7 @@
 
 ###########################################################################
 ### LAPSE RATE : ERA5 data
+###########################################################################
 
 # equation to find Geopotential altitude (m) in function of Pressure levels (hPa) according to ERA-interim values :
 
@@ -16,3 +17,9 @@ sapply(xx, ff)
  [8]  4212.780  3545.215  2924.150  2349.585  2079.740  1821.520  1574.925
 [15]  1339.955  1116.610   904.890   704.795   516.325   339.480   174.260
 
+
+###########################################################################
+## IF SPACE IS NEEDED !
+## Some files can be erased and quite quickly reproduced.
+## 	- CLOUDS/Alps_Mercator_resolution25/
+## 	- TEMPERATURE/Alps_Mercator_resolution25/
