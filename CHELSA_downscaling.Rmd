@@ -81,7 +81,7 @@ ratio at a point in space between the visible sky and a hemisphere centered over
     - CHELSA min/mean/max temperature : [here](http://chelsa-climate.org/downloads/)
     - Earth Env monthly cloud cover : [here](http://www.earthenv.org/cloud)
     - ERA Interim daily temperature (00:00 and 12:00) of model levels from 60 to 33 : [here](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)  
-    - USGS and NGA DEM data (GMTED2010) : [here](https://lta.cr.usgs.gov/GMTED2010)
+    - USGS and NGA DEM data (GMTED2010, mean 7.5 arc sec) : [here](https://www.usgs.gov/land-resources/eros/coastal-changes-and-impacts/gmted2010?qt-science_support_page_related_con=0#qt-science_support_page_related_con)
 
 <br/>
 
@@ -165,5 +165,6 @@ and $LAImax = 10 =$ cumulative LAI for all species in a grid cell from February 
 - [CHELSA](chelsa-climate.org)
 - [Earth Env](http://www.earthenv.org/)
 - [ERA Interim](http://apps.ecmwf.int/datasets/data/interim-full-daily/levtype=ml/)
-- [SGS and NGA DEM data (GMTED2010)](https://lta.cr.usgs.gov/GMTED2010)
+- [ERA5](https://cds.climate.copernicus.eu/cdsapp#!/dataset/reanalysis-era5-pressure-levels?tab=overview)
+- [SGS and NGA DEM data (GMTED2010)](https://www.usgs.gov/land-resources/eros/coastal-changes-and-impacts/gmted2010?qt-science_support_page_related_con=0#qt-science_support_page_related_con)
 

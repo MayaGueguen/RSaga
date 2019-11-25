@@ -95,7 +95,7 @@ dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/"), recursive = TRUE)
 
 ## Monthly averaged reanalysis
 ## Temperature
-## 250 to 1000 hPa
+## 250 to 1000 hPa (one by one)
 ## From 1979 to 2019
 ## 12 months
 ## 00:00
@@ -109,3 +109,5 @@ system(paste0("wget -P ", path.to.data, "DEM/RAW/ http://edcintl.cr.usgs.gov/dow
 
 ## TILES
 path.GMTED = "https://www.usgs.gov/land-resources/eros/coastal-changes-and-impacts/gmted2010?qt-science_support_page_related_con=0#qt-science_support_page_related_con"
+
+## Mean 7.5 arc sec
