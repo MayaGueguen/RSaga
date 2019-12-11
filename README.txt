@@ -8,7 +8,7 @@
 
 ``` R
 ff = function(x){ 0.0093*x*x - 24.9763*x + 15850.56 }
-xx = seq(250,1000,25)
+xx = c(seq(250, 750, 50), seq(775, 1000, 25))
 length(xx)
 sapply(xx, ff)
 ```

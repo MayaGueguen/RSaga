@@ -3,6 +3,8 @@
 
 rm(list=ls())
 library(foreach)
+library(doParallel)
+registerDoParallel(cores = 7)
 
 path.to.data = "/home/gueguema/Documents/CHELSA_DOWNSCALING/"
 setwd(path.to.data)
@@ -13,6 +15,11 @@ past.years = 1979:2013
 fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
 fut.rcp = c("45", "85")
 fut.years = c("2041-2060", "2061-2080")
+
+fut.ts.scenarios1 = c("cmcc_cmcc-cm_ar5", "csiro-bom_access1-3_ar5", "miroc_miroc5_ar5", "nsf-doe-ncar_cesm1-bgc_ar5")
+fut.ts.scenarios2 = c("CESM1-BGC", "IPSL-CM5A-MR", "MIROC5", "CESM1-BGC")
+fut.ts.rcp = c("45", "85")
+fut.ts.years = c("2041-2060", "2061-2080")
 
 
 ###################################################################
@@ -43,7 +50,7 @@ dir.create(paste0(path.to.data, "TEMPERATURE/RAW_TS_FUTURE/"), recursive = TRUE)
 
 
 ## CLIMATOLOGIES
-foreach(mm = list.mm) %do%
+foreach(mm = list.mm) %dopar%
   {
     system(paste0("wget -P ", path.to.data, "PRECIPITATION/RAW/ ", path.CHELSA.climatologies.prec, "CHELSA_prec_", mm, "_V1.2_land.tif"))
     system(paste0("wget -P ", path.to.data, "TEMPERATURE/RAW/ ", path.CHELSA.climatologies.tmin, "CHELSA_tmin10_", mm, "_1979-2013_V1.2_land.tif"))
@@ -52,8 +59,9 @@ foreach(mm = list.mm) %do%
 
 ## TIMESERIES
 combi = expand.grid(mm = list.mm, ye = past.years)
-foreach(mm = combi$mm, ye = combi$ye) %do%
+foreach(mm = combi$mm, ye = combi$ye) %dopar%
   {
+    cat("\n ==> Year ", ye, " month ",  mm)
     system(paste0("wget -P ", path.to.data, "PRECIPITATION/RAW_TS_PAST/ ", path.CHELSA.timeseries.prec, "CHELSA_prec_", ye, "_", mm, "_V1.2.1.tif"))
     system(paste0("wget -P ", path.to.data, "TEMPERATURE/RAW_TS_PAST/ ", path.CHELSA.timeseries.tmin, "CHELSA_tmin_", ye, "_", mm, "_V1.2.1.tif"))
     system(paste0("wget -P ", path.to.data, "TEMPERATURE/RAW_TS_PAST/ ", path.CHELSA.timeseries.tmax, "CHELSA_tmax_", ye, "_", mm, "_V1.2.1.tif"))
@@ -75,11 +83,11 @@ foreach(mm = combi$mm, sce = combi$sce, rcp = combi$rcp, ye = combi$ye) %do%
 ### EarthEnv CLOUD COVER (2000 - 2014)
 ###################################################################
 
-path.EarthEnv = "http://www.earthenv.org/cloud/"
+path.EarthEnv = "https://data.earthenv.org/cloud/"
 
 dir.create(paste0(path.to.data, "CLOUDS/RAW/"), recursive = TRUE)
 
-foreach(mm = list.mm) %do%
+foreach(mm = list.mm) %dopar%
   {
     system(paste0("wget -P ", path.to.data, "CLOUDS/RAW/ ", path.EarthEnv, "MODCF_monthlymean_", mm, ".tif"))
   }
