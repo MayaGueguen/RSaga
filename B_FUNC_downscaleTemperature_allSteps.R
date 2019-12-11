@@ -196,10 +196,15 @@ for (mm in list.mm)
 ###############################################################################
 
 ### CHELSA Temperature : mean, max, min : CURRENT -----------------------------
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "/")
-if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", zone.folder.name)
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2))
 }
 
 for (mm in list.mm)
@@ -209,10 +214,10 @@ for (mm in list.mm)
     cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for month ", mm, "\n")
     
     input.name = paste0("TEMPERATURE/RAW/CHELSA_", c("temp","tmax","tmin")[i], "10_", mm, "_1979-2013_V1.2_land.tif")
-    new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_", mm, ".sgrd")
+    new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_", mm, ".sgrd")
     output.name = sub(
       basename(input.name),
-      paste0(new.folder.name, new.file.name),
+      paste0(new.folder.name1, new.file.name),
       input.name
     )
     
@@ -234,14 +239,39 @@ for (mm in list.mm)
                               , " -TYPE=7")
       system(system.command) 
     }
+    
+    cat("\n ==> Downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for month ", mm, "\n")
+    
+    input.name = output.name
+    new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", mm, ".sgrd")
+    output.name = paste0("TEMPERATURE/RAW/", new.folder.name2, new.file.name)
+    
+    if (!file.exists(paste0(path.to.data, output.name)))
+    {
+      system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                              , paste0("\"", path.to.data, input.name, "\"")
+                              , " -OUTPUT="
+                              , paste0("\"", path.to.data, output.name, "\"")
+                              , " -SCALE_DOWN=3"
+                              , " -TARGET_DEFINITION=1"
+                              , " -TARGET_TEMPLATE="
+                              , paste0("\"", path.to.data, DEM_name, "\""))
+      
+      system(system.command)
+    }
   }
 }
 
 ### CHELSA Temperature : mean, max, min : PAST --------------------------------
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_PAST/")
-if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_TS_PAST/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", sub("/$", "_TS_PAST/", zone.folder.name))
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2))
 }
 
 for(ye in past.years)
@@ -253,34 +283,16 @@ for(ye in past.years)
       cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for year ", ye, " and month ", mm, "\n")
 
       input.name = paste0("TEMPERATURE/RAW_TS_PAST/CHELSA_", c("temp","tmax","tmin")[i], "_", ye, "_", mm, "_V1.2.1.tif")
-      new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_"
+      new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_"
                              , proj.name, "_resolution", proj.res.tempCHELSA, "_", ye, "_", mm, ".sgrd")
       output.name = sub(
         basename(input.name),
-        paste0(new.folder.name, new.file.name),
+        paste0(new.folder.name1, new.file.name),
         input.name
       )
 
       if (!file.exists(paste0(path.to.data, output.name)))
       {
-        # # system.command = paste0("saga_cmd grid_tools 12 -INPUT="
-        # #                         , paste0("\"", path.to.data, input.name, "\"")
-        # #                         , " -OUTPUT="
-        # #                         , paste0("\"", path.to.data, output.name, "\"")
-        # #                         , " -METHOD=0 -IDENTITY=\"new_param.txt\"")
-        # #
-        # # system(system.command)
-        # 
-        # system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-        #                         , paste0("\"", proj.value, "\"")
-        #                         , " -SOURCE="
-        #                         , paste0("\"", path.to.data, input.name, "\"")
-        #                         , " -GRIDS="
-        #                         , paste0("\"", path.to.data, output.name, "\"")
-        #                         , " -RESAMPLING=3") ## B-spline interpolation
-        # 
-        # system(system.command)
-        
         clipReproject(param.input = input.name
                       , param.output = output.name
                       , param.extent = proj.extent
@@ -296,9 +308,18 @@ for(ye in past.years)
                                 , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
                                 , " -TYPE=7")
         system(system.command)
-        
+      }
+      
+      cat("\n ==> Downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for year ", ye, " and month ", mm, "\n")
+      
+      input.name = output.name
+      new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", ye, "_", mm, ".sgrd")
+      output.name = paste0("TEMPERATURE/RAW/", new.folder.name2, new.file.name)
+      
+      if (!file.exists(paste0(path.to.data, output.name)))
+      {
         system.command = paste0("saga_cmd grid_tools 0 -INPUT="
-                                , paste0("\"", path.to.data, output.name, "\"")
+                                , paste0("\"", path.to.data, input.name, "\"")
                                 , " -OUTPUT="
                                 , paste0("\"", path.to.data, output.name, "\"")
                                 , " -SCALE_DOWN=3"
@@ -306,17 +327,22 @@ for(ye in past.years)
                                 , " -TARGET_TEMPLATE="
                                 , paste0("\"", path.to.data, DEM_name, "\""))
         
-        system(system.command) 
+        system(system.command)
       }
     }
   }
 }
 
-### CHELSA Temperature : mean, max, min : FUTURE
-new.folder.name = paste0("../", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_FUTURE/")
-if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+### CHELSA Temperature : mean, max, min : FUTURE ------------------------------
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", sub("/$", "_FUTURE/", zone.folder.name))
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2))
 }
 
 for (sce in fut.scenarios)
@@ -333,25 +359,21 @@ for (sce in fut.scenarios)
           
           input.name = paste0("TEMPERATURE/RAW_FUTURE/CHELSA_", c("tas","tasmax","tasmin")[i]
                               , "_mon_", sce, "_rcp", rcp, "_r1i1p1_g025.nc_", mm, "_", ye, "_V1.2.tif")
-          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_", proj.name
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_", proj.name
                                  , "_resolution", proj.res.tempCHELSA, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
           output.name = sub(
             basename(input.name),
-            paste0(new.folder.name, new.file.name),
+            paste0(new.folder.name1, new.file.name),
             input.name
           )
           
           if (!file.exists(paste0(path.to.data, output.name)))
           {
-            system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-                                    , paste0("\"", proj.value, "\"")
-                                    , " -SOURCE="
-                                    , paste0("\"", path.to.data, input.name, "\"")
-                                    , " -GRIDS="
-                                    , paste0("\"", path.to.data, output.name, "\"")
-                                    , " -RESAMPLING=3") ## B-spline interpolation
-            
-            system(system.command)
+            clipReproject(param.input = input.name
+                          , param.output = output.name
+                          , param.extent = proj.extent
+                          , param.proj = proj.value
+                          , param.res = proj.res.tempCHELSA)
             
             system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                                     , paste0("\"", path.to.data, output.name, "\"")
@@ -361,7 +383,104 @@ for (sce in fut.scenarios)
                                     , " -NAME="
                                     , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
                                     , " -TYPE=7")
-            system(system.command) 
+            system(system.command)
+          }
+          
+          cat("\n ==> Downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          input.name = output.name
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = paste0("TEMPERATURE/RAW/", new.folder.name2, new.file.name)
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                                    , paste0("\"", path.to.data, input.name, "\"")
+                                    , " -OUTPUT="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -SCALE_DOWN=3"
+                                    , " -TARGET_DEFINITION=1"
+                                    , " -TARGET_TEMPLATE="
+                                    , paste0("\"", path.to.data, DEM_name, "\""))
+            
+            system(system.command)
+          }
+        }
+      }
+    }
+  }
+}
+
+### CHELSA Temperature : mean, max, min : FUTURE TIMESERIES -------------------
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_TS_FUTURE/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", sub("/$", "_TS_FUTURE/", zone.folder.name))
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name2))
+}
+
+for (sce in fut.ts.scenarios)
+{
+  for (rcp in fut.ts.rcp)
+  {
+    for (ye in fut.ts.years)
+    {
+      for (mm in list.mm)
+      {
+        for (i in 2:3)
+        {
+          cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          input.name = paste0("TEMPERATURE/RAW_TS_FUTURE/CHELSA_", sce, "_rcp", rcp, "_", ye, "_", mm, "_", c("tas","tmax","tmin")[i], ".tif")
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_", proj.name
+                                 , "_resolution", proj.res.tempCHELSA, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = sub(
+            basename(input.name),
+            paste0(new.folder.name1, new.file.name),
+            input.name
+          )
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            clipReproject(param.input = input.name
+                          , param.output = output.name
+                          , param.extent = proj.extent
+                          , param.proj = proj.value
+                          , param.res = proj.res.tempCHELSA)
+            
+            system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -FORMULA=\"g1 / 10\""
+                                    , " -NAME="
+                                    , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
+                                    , " -TYPE=7")
+            system(system.command)
+          }
+          
+          cat("\n ==> Downscale CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
+          
+          input.name = output.name
+          new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+          output.name = paste0("TEMPERATURE/RAW/", new.folder.name2, new.file.name)
+          
+          if (!file.exists(paste0(path.to.data, output.name)))
+          {
+            system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                                    , paste0("\"", path.to.data, input.name, "\"")
+                                    , " -OUTPUT="
+                                    , paste0("\"", path.to.data, output.name, "\"")
+                                    , " -SCALE_DOWN=3"
+                                    , " -TARGET_DEFINITION=1"
+                                    , " -TARGET_TEMPLATE="
+                                    , paste0("\"", path.to.data, DEM_name, "\""))
+            
+            system(system.command)
           }
         }
       }
