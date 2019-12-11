@@ -18,16 +18,23 @@ zone_name.clouds = "World"
 zone_name.tempCHELSA = "World"
 zone_name.tempERA = "World"
 zone_name.GMTED = "FID30"
-proj.res.clouds = 6000
+proj.res.clouds = 4000
 proj.res.tempCHELSA = 4000
 proj.res.tempERA = 30000
 proj.res.GMTED = 310
 proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
 
-fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
+list.mm = c(paste0("0", 1:9), 10:12)
+past.years = 1979:2013
+
+fut.scenarios = c("CMCC-CM", "ACCESS1-0", "MIROC5", "CESM1-BGC")
 fut.rcp = c("45", "85")
 fut.years = c("2041-2060", "2061-2080")
+
+fut.ts.scenarios = c("CMCC-CM", "ACCESS1-3", "MIROC5", "CESM1-BGC")
+fut.ts.rcp = c("45", "85")
+fut.ts.years = seq(2010, 2100, 10)
 
 setwd(path.to.SAGA)
 
@@ -44,7 +51,7 @@ if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name)))
 }
 
 ### Monthly cloud coverage
-for (mm in 1:12)
+for (mm in list.mm)
 {
   cat("\n ==> Reproject EarthEnv clouds coverage for month ", mm, "\n")
   
@@ -56,18 +63,19 @@ for (mm in 1:12)
     input.name
   )
   
-  if (!file.exists(paste0(path.to.data, output.name)))
-  {
-    system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-                            , paste0("\"", proj.value, "\"")
-                            , " -SOURCE="
-                            , paste0("\"", path.to.data, input.name, "\"")
-                            , " -GRIDS="
-                            , paste0("\"", path.to.data, output.name, "\"")
-                            , " -RESAMPLING=3") ## B-spline interpolation
-    
-    system(system.command)
-  }
+  ## DO NOT WORK
+  # if (!file.exists(paste0(path.to.data, output.name)))
+  # {
+  #   system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
+  #                           , paste0("\"", proj.value, "\"")
+  #                           , " -SOURCE="
+  #                           , paste0("\"", path.to.data, input.name, "\"")
+  #                           , " -GRIDS="
+  #                           , paste0("\"", path.to.data, output.name, "\"")
+  #                           , " -RESAMPLING=3") ## B-spline interpolation
+  #   
+  #   system(system.command)
+  # }
 }
 
 
@@ -80,7 +88,7 @@ if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
 }
 
 ### CHELSA Temperature : mean, max, min : CURRENT
-for (mm in 1:12)
+for (mm in list.mm)
 {
   for (i in 2:3)
   {
@@ -102,6 +110,8 @@ for (mm in 1:12)
                               , paste0("\"", path.to.data, input.name, "\"")
                               , " -GRIDS="
                               , paste0("\"", path.to.data, output.name, "\"")
+                              , " -TARGET_USER_SIZE="
+                              , unique(proj.res.tempCHELSA)
                               , " -RESAMPLING=3") ## B-spline interpolation
       
       system(system.command)
@@ -119,73 +129,71 @@ for (mm in 1:12)
   }
 }
 
-# new.folder.name = paste0("../", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_PAST/")
-# if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
-# {
-#   dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
-# }
-# 
-# ### CHELSA Temperature : mean, max, min : PAST
-# list.mm = c(paste0("0", 1:9), 10:12)
-# past.years = 1979:2013
-# for(ye in past.years)
-# {
-#   for (mm in list.mm)
-#   {
-#     for (i in 2:3)
-#     {
-#       cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for year ", ye, " and month ", mm, "\n")
-#       
-#       input.name = paste0("TEMPERATURE/RAW_TS_PAST/CHELSA_", c("temp","tmax","tmin")[i], "_", ye, "_", mm, "_V1.2.1.tif")
-#       new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_"
-#                              , proj.name, "_resolution", proj.res.tempCHELSA, "_", ye, "_", mm, ".sgrd")
-#       output.name = sub(
-#         basename(input.name),
-#         paste0(new.folder.name, new.file.name),
-#         input.name
-#       )
-#       
-#       if (!file.exists(paste0(path.to.data, output.name)))
-#       {
-#         # system.command = paste0("saga_cmd grid_tools 12 -INPUT="
-#         #                         , paste0("\"", path.to.data, input.name, "\"")
-#         #                         , " -OUTPUT="
-#         #                         , paste0("\"", path.to.data, output.name, "\"")
-#         #                         , " -METHOD=0 -IDENTITY=\"new_param.txt\"")
-#         # 
-#         # system(system.command)
-#         
-#         # system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-#         #                         , paste0("\"", proj.value, "\"")
-#         #                         , " -SOURCE="
-#         #                         , paste0("\"", path.to.data, input.name, "\"")
-#         #                         , " -GRIDS="
-#         #                         , paste0("\"", path.to.data, output.name, "\"")
-#         #                         , " -RESAMPLING=3") ## B-spline interpolation
-#         # 
-#         # system(system.command)
-#         # 
-#         # system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
-#         #                         , paste0("\"", path.to.data, output.name, "\"")
-#         #                         , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
-#         #                         , paste0("\"", path.to.data, output.name, "\"")
-#         #                         , " -FORMULA=\"g1 / 10\""
-#         #                         , " -NAME="
-#         #                         , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
-#         #                         , " -TYPE=7")
-#         # system(system.command) 
-#       }
-#     }
-#   }
-# }
+### CHELSA Temperature : mean, max, min : PAST
+new.folder.name = paste0("../", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_PAST/")
+if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
+{
+  dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
+}
 
+for(ye in past.years)
+{
+  for (mm in list.mm)
+  {
+    for (i in 2:3)
+    {
+      cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for year ", ye, " and month ", mm, "\n")
+
+      input.name = paste0("TEMPERATURE/RAW_TS_PAST/CHELSA_", c("temp","tmax","tmin")[i], "_", ye, "_", mm, "_V1.2.1.tif")
+      new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_"
+                             , proj.name, "_resolution", proj.res.tempCHELSA, "_", ye, "_", mm, ".sgrd")
+      output.name = sub(
+        basename(input.name),
+        paste0(new.folder.name, new.file.name),
+        input.name
+      )
+
+      if (!file.exists(paste0(path.to.data, output.name)))
+      {
+        # system.command = paste0("saga_cmd grid_tools 12 -INPUT="
+        #                         , paste0("\"", path.to.data, input.name, "\"")
+        #                         , " -OUTPUT="
+        #                         , paste0("\"", path.to.data, output.name, "\"")
+        #                         , " -METHOD=0 -IDENTITY=\"new_param.txt\"")
+        #
+        # system(system.command)
+
+        system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
+                                , paste0("\"", proj.value, "\"")
+                                , " -SOURCE="
+                                , paste0("\"", path.to.data, input.name, "\"")
+                                , " -GRIDS="
+                                , paste0("\"", path.to.data, output.name, "\"")
+                                , " -RESAMPLING=3") ## B-spline interpolation
+
+        system(system.command)
+
+        system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                , paste0("\"", path.to.data, output.name, "\"")
+                                , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                                , paste0("\"", path.to.data, output.name, "\"")
+                                , " -FORMULA=\"g1 / 10\""
+                                , " -NAME="
+                                , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
+                                , " -TYPE=7")
+        system(system.command)
+      }
+    }
+  }
+}
+
+### CHELSA Temperature : mean, max, min : FUTURE
 new.folder.name = paste0("../", zone_name.tempCHELSA, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_FUTURE/")
 if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name)))
 {
   dir.create(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name))
 }
 
-### CHELSA Temperature : mean, max, min : FUTURE
 for (sce in fut.scenarios)
 {
   for (rcp in fut.rcp)
@@ -194,11 +202,11 @@ for (sce in fut.scenarios)
     {
       for (mm in 1:12)
       {
-        for (i in 1:3)
+        for (i in 2:3)
         {
           cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for ", sce, rcp, ye, " and month ", mm, "\n")
           
-          input.name = paste0("TEMPERATURE/RAW_TS_FUTURE/CHELSA_", c("tas","tasmax","tasmin")[i]
+          input.name = paste0("TEMPERATURE/RAW_FUTURE/CHELSA_", c("tas","tasmax","tasmin")[i]
                               , "_mon_", sce, "_rcp", rcp, "_r1i1p1_g025.nc_", mm, "_", ye, "_V1.2.tif")
           new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name.tempCHELSA, "_", proj.name
                                  , "_resolution", proj.res.tempCHELSA, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")

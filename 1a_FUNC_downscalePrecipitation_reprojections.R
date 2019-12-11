@@ -8,6 +8,7 @@ library(rgdal)
 # path.to.data = "C:/Users/gueguen/Documents/CLIMATE_DOWNSCALING/"
 # path.to.SAGA = "C:/Program Files (x86)/SAGA-GIS/"
 path.to.data = "/run/user/1001/gvfs/smb-share:server=129.88.191.70,share=equipes/macroeco/GIS_DATA/CHELSA_DOWNSCALING/"
+path.to.data = "/home/gueguema/Documents/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 zone_name.precip = "World"
@@ -15,9 +16,16 @@ proj.res.precip = 850
 proj.name = "ETRS89"
 proj.value = "+proj=laea +lat_0=52 +lon_0=10 +x_0=4321000 +y_0=3210000 +ellps=GRS80 +units=m +no_defs "
 
-fut.scenarios = c("CESM1-BGC", "IPSL-CM5A-MR", "MPI-ESM-LR")
+list.mm = c(paste0("0", 1:9), 10:12)
+past.years = 1979:2013
+
+fut.scenarios = c("CMCC-CM", "ACCESS1-0", "MIROC5", "CESM1-BGC")
 fut.rcp = c("45", "85")
-fut.years = c("2061-2080")
+fut.years = c("2041-2060", "2061-2080")
+
+fut.ts.scenarios = c("CMCC-CM", "ACCESS1-3", "MIROC5", "CESM1-BGC")
+fut.ts.rcp = c("45", "85")
+fut.ts.years = seq(2010, 2100, 10)
 
 setwd(path.to.SAGA)
 
