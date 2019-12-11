@@ -70,7 +70,7 @@ foreach(mm = list.mm) %dopar%
     system(paste0("wget -P ", path.to.data, "TEMPERATURE/RAW/ ", path.CHELSA.climatologies.tmax, "CHELSA_tmax10_", mm, "_1979-2013_V1.2_land.tif"))
   }
 
-## TIMESERIES
+## PAST TIMESERIES
 combi = expand.grid(mm = list.mm, ye = past.years)
 foreach(mm = combi$mm, ye = combi$ye) %dopar%
   {

@@ -155,15 +155,21 @@ tmp = projectExtent(DEM_ras, crs = proj.longlat)
 proj.extent = extent(tmp)
 
 
+
 ###############################################################################
 ### CLOUDS (EarthEnv)
 ### CLIB & REPROJECT INPUT data (must be a conserving angle projection !!)
 ###############################################################################
 
-new.folder.name = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "/")
-if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name)))
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "/")
+if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "CLOUDS/RAW/", new.folder.name2))
 }
 
 ### Monthly cloud coverage
@@ -175,7 +181,7 @@ for (mm in list.mm)
   new.file.name = paste0("CLOUDS_", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "_", mm, ".sgrd")
   output.name = sub(
     basename(input.name),
-    paste0(new.folder.name, new.file.name),
+    paste0(new.folder.name1, new.file.name),
     input.name
   )
   
@@ -186,6 +192,27 @@ for (mm in list.mm)
                   , param.extent = proj.extent
                   , param.proj = proj.value
                   , param.res = proj.res.clouds)
+  }
+  
+  cat("\n ==> GWR of EarthEnv clouds coverage in function of DEM for month ", mm, "\n")
+  
+  input.name = output.name
+  output.name = sub(proj.res.clouds, proj.res, basename(input.name))
+  output.name.1 = paste0("CLOUDS/RAW/", new.folder.name2, sub(extension(output.name), "_regression.sgrd", output.name))
+  output.name.2 = paste0("CLOUDS/RAW/", new.folder.name2, sub(extension(output.name), "_regression_rescorr.sgrd", output.name))
+  
+  if (!file.exists(paste0(path.to.data, output.name.1)))
+  {
+    system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
+                            , paste0("\"", path.to.data, DEM_name, "\"")
+                            , " -REGRESSION="
+                            , paste0("\"", path.to.data, output.name.1, "\"")
+                            , " -REG_RESCORR="
+                            , paste0("\"", path.to.data, output.name.2, "\"")
+                            , " -DEPENDENT="
+                            , paste0("\"", path.to.data, input.name, "\""))
+    
+    system(system.command) 
   }
 }
 
