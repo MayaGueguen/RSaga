@@ -610,15 +610,15 @@ if (!file.exists(paste0(path.to.data, output.name)))
 ## DOWNSCALE (geographically weighted regression)
 ###############################################################################
 
-# new.folder.name.1 = paste0("../", zone_name.tempERA, "_longlat_resolution0.75/")
-# if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.1)))
-# {
-#   dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.1))
-# }
-new.folder.name.2 = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution", proj.res.tempERA, "/")
-if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.2)))
+new.folder.name1 = paste0("../", zone_name.tempERA, "_longlat_resolution0.25/")
+if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.2))
+  dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res.tempERA, "/")
+if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name2))
 }
 
 
@@ -633,102 +633,124 @@ for (lev in 1:length(levels.pressure))
   {
     cat("\n ==> Extract and average ERA-interim temperature for level ", lev, " and year ", ye, "\n")
     
-    setwd(path.to.data)
+    # setwd(path.to.data)
     input.ras = brick(input.name.nc)
     input.ras = stack(input.ras)
     input.ras = input.ras[[grep(paste0("^X", ye), names(input.ras))]]
-    origin(input.ras) = origin(DEM_ras)
-    # input.ras = projectRaster(input.ras, res = unique(res(input.ras)), crs= CRS(proj.longlat))
-    input.ras = crop(input.ras, proj.extent)
+    origin(input.ras) = c(0,0)
     
     new.mm = sapply(names(input.ras), function(x) strsplit(x, "[.]")[[1]][2])
-    # new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name.tempERA, "_longlat_resolution", unique(res(input.ras))
-    #                        , "_", as.numeric(new.mm) ,"_LEVEL", lev, ".img")
-    # output.name = sapply(new.file.name
-    #                      , function(x) sub(
-    #                        basename(input.name.nc),
-    #                        paste0(new.folder.name.1, x),
-    #                        input.name.nc
-    #                      ))
-    new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA
-                           , "_", as.numeric(new.mm) ,"_LEVEL", lev, ".img")
+    new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name.tempERA, "_longlat_resolution", unique(res(input.ras))
+                           , "_", as.numeric(new.mm) , "_", ye, "_LEVEL", lev, ".img")
     output.name = sapply(new.file.name
                          , function(x) sub(
                            basename(input.name.nc),
-                           paste0(new.folder.name.2, x),
+                           paste0(new.folder.name1, x),
                            input.name.nc
                          ))
+    
     if (!file.exists(paste0(path.to.data, output.name[1])))
     {
-      hop = projectRaster(input.ras, crs = CRS(proj.value))
-      writeRaster(input.ras, filename = output.name, bylayer = TRUE)
+      input.pts = as.data.frame(rasterToPoints(input.ras))
+      input.pts$x[which(input.pts$x > 180)] =  (input.pts$x[which(input.pts$x > 180)] - 360)
+      new_ras = rasterFromXYZ(input.pts, res = unique(res(input.ras)), crs= CRS(proj.longlat))
+      
+      writeRaster(new_ras, filename = output.name, bylayer = TRUE)
     }
     
-    ### NOT WORKING : gives a 2 column band
-    # setwd(path.to.SAGA)
-    # 
-    # input.name = output.name
-    # new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA
-    #                        , "_", as.numeric(new.mm) ,"_LEVEL", lev, ".sgrd")
-    # output.name = sapply(new.file.name
-    #                      , function(x) sub(
-    #                        basename(input.name.nc),
-    #                        paste0(new.folder.name.2, x),
-    #                        input.name.nc
-    #                      ))
-    # 
-    # for (i in 1:length(input.name))
-    # {
-    #   cat("\n ==> Reproject ERA-interim temperature for month ", mm, " level ", lev, "\n")
-    #   
-    #   if (!file.exists(paste0(path.to.data, output.name[i])))
-    #   {
-    #     system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-    #                             , paste0("\"", proj.value, "\"")
-    #                             , " -SOURCE="
-    #                             , paste0("\"", path.to.data, input.name[i], "\"")
-    #                             , " -GRIDS="
-    #                             , paste0("\"", path.to.data, output.name[i], "\"")
-    #                             , " -RESAMPLING=3") ## B-spline interpolation
-    #     
-    #     system(system.command)
-    #   }
-    # }
+    cat("\n ==> Clip and reproject ERA-interim temperature for level ", lev, " and year ", ye, "\n")
+    
+    input.name = output.name
+    new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name, "_", proj.name, "_resolution", proj.res.tempERA
+                           , "_", as.numeric(new.mm) , "_", ye, "_LEVEL", lev, ".sgrd")
+    output.name = sapply(new.file.name
+                         , function(x) sub(
+                           basename(input.name.nc),
+                           paste0(new.folder.name2, x),
+                           input.name.nc
+                         ))
+
+    for (i in 1:length(input.name))
+    {
+      if (!file.exists(paste0(path.to.data, output.name[i])))
+      {
+        clipReproject(param.input = input.name[i]
+                      , param.output = output.name[i]
+                      , param.extent = proj.extent
+                      , param.proj = proj.value
+                      , param.res = proj.res.tempERA)
+      }
+    }
   }
 }
-
-###################################################################
-### LAPSE RATE
-###################################################################
 
 new.folder.name = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution", proj.res.tempERA, "/")
+# new.folder.name = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res.tempERA, "/")
 
 ### Monthly temperature with model levels
-for (mm in 1:12)
+for (ye in ERA5.years)
 {
-  cat("\n ==> Compute lapse-rate (temperature ~ elevation level) for month ", mm, "\n")
-  
-  input.name = paste0("ERAinterim_TEMP_MEAN_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm)
-  input.name = paste0(input.name, "_LEVEL", 1:28)
-  input.name = paste0(input.name, ".img")
-  input.name = paste0("LAPSE_RATE/RAW/", new.folder.name, input.name)
-  
-  new.file.name = paste0("LAPSE_RATE_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, ".sgrd")
-  output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
-  output.name.1 = sub(extension(output.name), "_coeff1.sgrd", output.name)
-  output.name.2 = sub(extension(output.name), "_coeff2.sgrd", output.name)
-  
-  L60_model_levels = "ERA-interim_L60_model_levels.txt"
-  
-  if (!file.exists(paste0(path.to.data, output.name.1)))
+  for (mm in 1:12)
   {
-    system.command = paste0("saga_cmd statistics_regression 9 -Y_GRIDS="
-                            , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
-                            , " -COEFF="
-                            , paste0("\"", paste0(path.to.data, c(output.name.1, output.name.2), collapse = ";"), "\"")
-                            , " -ORDER=1 -XSOURCE=1 -X_TABLE="
-                            , paste0("\"", path.to.data, L60_model_levels, "\""))
+    cat("\n ==> Compute lapse-rate (temperature ~ elevation level) for year ", ye, " and month ", mm, "\n")
     
-    system(system.command)
+    input.name = paste0("ERA5_TEMP_MEAN_", zone_name, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, "_", ye)
+    input.name = paste0(input.name, "_LEVEL", 1:length(levels.pressure))
+    input.name = paste0(input.name, ".sgrd")
+    input.name = paste0("LAPSE_RATE/RAW/", new.folder.name, input.name)
+    
+    new.file.name = paste0("LAPSE_RATE_", zone_name, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, "_", ye, ".sgrd")
+    output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
+    output.name.1 = sub(extension(output.name), "_coeff1.sgrd", output.name)
+    output.name.2 = sub(extension(output.name), "_coeff2.sgrd", output.name)
+    
+    L60_model_levels = "ERA5_L60_model_levels.txt"
+    
+    if (!file.exists(paste0(path.to.data, output.name.1)))
+    {
+      system.command = paste0("saga_cmd statistics_regression 9 -Y_GRIDS="
+                              , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
+                              , " -COEFF="
+                              , paste0("\"", paste0(path.to.data, c(output.name.1, output.name.2), collapse = ";"), "\"")
+                              , " -ORDER=1 -XSOURCE=1 -X_TABLE="
+                              , paste0("\"", path.to.data, L60_model_levels, "\""))
+      
+      system(system.command)
+    }
   }
 }
+
+# tempERA.folder.name = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution", proj.res.tempERA, "/")
+# new.folder.name = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+# if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name)))
+# {
+#   dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name))
+# }
+# 
+# ### Monthly temperature with model levels
+# for (mm in 1:12)
+# {
+#   cat("\n ==> Clip and downscale lapse-rate for month ", mm, "\n")
+#   
+#   new.file.name = paste0("LAPSE_RATE_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, ".sgrd")
+#   input.name = paste0("LAPSE_RATE/RAW/", tempERA.folder.name, new.file.name)
+#   input.name = sub(extension(input.name), "_coeff2.sgrd", input.name)
+#   
+#   new.file.name = paste0("LAPSE_RATE_", zone.file.name, "_", mm, ".sgrd")
+#   output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
+#   output.name = sub(extension(output.name), "_coeff2.sgrd", output.name)
+#   
+#   if (!file.exists(paste0(path.to.data, output.name)))
+#   {
+#     system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+#                             , paste0("\"", path.to.data, input.name, "\"")
+#                             , " -OUTPUT="
+#                             , paste0("\"", path.to.data, output.name, "\"")
+#                             , " -SCALE_DOWN=3"
+#                             , " -TARGET_DEFINITION=1"
+#                             , " -TARGET_TEMPLATE="
+#                             , paste0("\"", path.to.data, DEM_name, "\""))
+#     
+#     system(system.command)
+#   }
+# }
