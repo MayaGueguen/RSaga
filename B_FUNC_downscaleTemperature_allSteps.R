@@ -633,7 +633,6 @@ for (lev in 1:length(levels.pressure))
   {
     cat("\n ==> Extract and average ERA-interim temperature for level ", lev, " and year ", ye, "\n")
     
-    # setwd(path.to.data)
     input.ras = brick(input.name.nc)
     input.ras = stack(input.ras)
     input.ras = input.ras[[grep(paste0("^X", ye), names(input.ras))]]
@@ -684,10 +683,14 @@ for (lev in 1:length(levels.pressure))
   }
 }
 
-new.folder.name = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution", proj.res.tempERA, "/")
-# new.folder.name = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res.tempERA, "/")
-
 ### Monthly temperature with model levels
+new.folder.name1 = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res.tempERA, "/")
+new.folder.name2 = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name2))
+}
+
 for (ye in ERA5.years)
 {
   for (mm in 1:12)
@@ -697,10 +700,10 @@ for (ye in ERA5.years)
     input.name = paste0("ERA5_TEMP_MEAN_", zone_name, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, "_", ye)
     input.name = paste0(input.name, "_LEVEL", 1:length(levels.pressure))
     input.name = paste0(input.name, ".sgrd")
-    input.name = paste0("LAPSE_RATE/RAW/", new.folder.name, input.name)
+    input.name = paste0("LAPSE_RATE/RAW/", new.folder.name1, input.name)
     
     new.file.name = paste0("LAPSE_RATE_", zone_name, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, "_", ye, ".sgrd")
-    output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
+    output.name = paste0("LAPSE_RATE/RAW/", new.folder.name1, new.file.name)
     output.name.1 = sub(extension(output.name), "_coeff1.sgrd", output.name)
     output.name.2 = sub(extension(output.name), "_coeff2.sgrd", output.name)
     
@@ -717,40 +720,25 @@ for (ye in ERA5.years)
       
       system(system.command)
     }
+    
+    input.name = output.name.2
+    new.file.name = paste0("LAPSE_RATE_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, "_", ye, ".sgrd")
+    new.file.name = sub(extension(new.file.name), "_coeff2.sgrd", new.file.name)
+    output.name = paste0("LAPSE_RATE/RAW/", new.folder.name2, new.file.name)
+
+    if (!file.exists(paste0(path.to.data, output.name)))
+    {
+      system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                              , paste0("\"", path.to.data, input.name, "\"")
+                              , " -OUTPUT="
+                              , paste0("\"", path.to.data, output.name, "\"")
+                              , " -SCALE_DOWN=3"
+                              , " -TARGET_DEFINITION=1"
+                              , " -TARGET_TEMPLATE="
+                              , paste0("\"", path.to.data, DEM_name, "\""))
+
+      system(system.command)
+    }
   }
 }
 
-# tempERA.folder.name = paste0("../", zone_name.tempERA, "_", proj.name,"_resolution", proj.res.tempERA, "/")
-# new.folder.name = paste0("../", zone_name, "_", proj.name,"_resolution", proj.res, "/")
-# if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name)))
-# {
-#   dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name))
-# }
-# 
-# ### Monthly temperature with model levels
-# for (mm in 1:12)
-# {
-#   cat("\n ==> Clip and downscale lapse-rate for month ", mm, "\n")
-#   
-#   new.file.name = paste0("LAPSE_RATE_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA, "_", mm, ".sgrd")
-#   input.name = paste0("LAPSE_RATE/RAW/", tempERA.folder.name, new.file.name)
-#   input.name = sub(extension(input.name), "_coeff2.sgrd", input.name)
-#   
-#   new.file.name = paste0("LAPSE_RATE_", zone.file.name, "_", mm, ".sgrd")
-#   output.name = paste0("LAPSE_RATE/RAW/", new.folder.name, new.file.name)
-#   output.name = sub(extension(output.name), "_coeff2.sgrd", output.name)
-#   
-#   if (!file.exists(paste0(path.to.data, output.name)))
-#   {
-#     system.command = paste0("saga_cmd grid_tools 0 -INPUT="
-#                             , paste0("\"", path.to.data, input.name, "\"")
-#                             , " -OUTPUT="
-#                             , paste0("\"", path.to.data, output.name, "\"")
-#                             , " -SCALE_DOWN=3"
-#                             , " -TARGET_DEFINITION=1"
-#                             , " -TARGET_TEMPLATE="
-#                             , paste0("\"", path.to.data, DEM_name, "\""))
-#     
-#     system(system.command)
-#   }
-# }
