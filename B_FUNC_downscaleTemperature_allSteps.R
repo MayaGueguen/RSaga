@@ -14,10 +14,7 @@ library(ncdf4)
 path.to.data = "/home/gueguema/Documents/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
-# zone_name.clouds = "World"
-# zone_name.tempCHELSA = "World"
 zone_name.tempERA = "World"
-zone_name.GMTED = "World" ## "FID30"
 proj.res.clouds = 1000 ## 6000
 proj.res.tempCHELSA = 1000 ## 4000
 proj.res.tempERA = 30000
@@ -742,3 +739,100 @@ for (ye in ERA5.years)
   }
 }
 
+
+###################################################################
+### SKY VIEW FACTOR
+###################################################################
+
+### DEM or DEM FLAT
+for (VAR in c(DEM_name, input.name.DEM.flat))
+{
+  input.name = VAR
+  output.name.vis = sub(extension(input.name), "_VISIBLE.sgrd", input.name)
+  output.name.svf = sub(extension(input.name), "_SVF.sgrd", input.name)
+  
+  if (!file.exists(paste0(path.to.data, output.name.svf)))
+  {
+    cat("\n ==> Calculating sky view factor \n")
+    
+    system.command = paste0("saga_cmd ta_lighting 3 -DEM="
+                            , paste0("\"", path.to.data, input.name, "\"")
+                            , " -VISIBLE="
+                            , paste0("\"", path.to.data, output.name.vis, "\"")
+                            , " -SVF="
+                            , paste0("\"", path.to.data, output.name.svf, "\""))
+    
+    system(system.command)
+  }
+}
+
+
+###################################################################
+### SOLAR RADIATION
+###################################################################
+
+new.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, new.folder.name)))
+{
+  dir.create(paste0(path.to.data, new.folder.name))
+}
+
+# input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
+for (VAR in c(DEM_name, input.name.DEM.flat))
+{
+  input.name.dem = VAR
+  input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
+  
+  # for (ye in c(1979:2020, seq(2030, 2100, 10)))
+  ye = 2018
+  {
+    for (mm in 1:12)
+    {
+      dd = 1
+      {
+        cat("\n ==> Calculate solar radiation for month ", mm, " from day ", dd, "\n")
+        mm = as.numeric(mm)
+        mm.end = mm + 1
+        if (mm == 12) mm.end = 1
+        yy.end = ifelse(mm == 12, ye + 1, ye)
+        dd.end = 1
+        nb.days = nrow(as.data.frame(seq.POSIXt(from = ISOdate(ye, mm, dd),
+                                                to = ISOdate(yy.end, mm.end, dd.end),
+                                                by = "day"))) - 1
+        
+        cat("STARTING POINT : ", ISOdate(ye, mm, dd), "\n")
+        cat("ENDING POINT : ", ISOdate(yy.end, mm.end, dd.end), "\n")
+        cat("NB DAYS : ", nb.days, "\n")
+        
+        output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+        output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+        output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+        if (length(grep("FLAT", VAR)) > 0){
+          output.name.direct = sub(extension(output.name.direct), "_DEM_FLAT.sgrd", output.name.direct)
+          output.name.diffus = sub(extension(output.name.diffus), "_DEM_FLAT.sgrd", output.name.diffus)
+          output.name.total = sub(extension(output.name.total), "_DEM_FLAT.sgrd", output.name.total)
+        }
+        
+        if (!file.exists(paste0(path.to.data, output.name.total)))
+        {
+          if (mm <= 9 && nchar(mm) == 1) mm = paste0("0", mm)
+          system.command = paste0("saga_cmd ta_lighting 2 -GRD_DEM="
+                                  , paste0("\"", path.to.data, input.name.dem, "\"")
+                                  , " -GRD_SVF="
+                                  , paste0("\"", path.to.data, input.name.svf, "\"")
+                                  , " -GRD_DIRECT="
+                                  , paste0("\"", path.to.data, output.name.direct, "\"")
+                                  , " -GRD_DIFFUS="
+                                  , paste0("\"", path.to.data, output.name.diffus, "\"")
+                                  , " -GRD_TOTAL="
+                                  , paste0("\"", path.to.data, output.name.total, "\"")
+                                  , " -LOCATION=1 -PERIOD=2 -DAY=", ye, "-", mm, "-1 -DAY_STOP=", ye, "-", mm, "-", nb.days
+                                  , " -DAYS_STEP=1")
+          
+          
+          system(system.command)
+        }
+      }
+    }
+  }
+}
