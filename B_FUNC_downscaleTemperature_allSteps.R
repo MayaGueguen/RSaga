@@ -16,8 +16,8 @@ path.to.SAGA = path.to.data
 
 # zone_name.clouds = "World"
 # zone_name.tempCHELSA = "World"
-# zone_name.tempERA = "World"
-# zone_name.GMTED = "World" ## "FID30"
+zone_name.tempERA = "World"
+zone_name.GMTED = "World" ## "FID30"
 proj.res.clouds = 1000 ## 6000
 proj.res.tempCHELSA = 1000 ## 4000
 proj.res.tempERA = 30000
@@ -155,10 +155,39 @@ tmp = projectExtent(DEM_ras, crs = proj.longlat)
 proj.extent = extent(tmp)
 
 
+###############################################################################
+## LEAF AREA INDEX for LST calculation
+input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
+if (!file.exists(paste0(path.to.data, input.name.lai)))
+{
+  system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                          , paste0("\"", path.to.data, DEM_name, "\"")
+                          , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                          , paste0("\"", path.to.data, input.name.lai, "\"")
+                          , " -FORMULA=0.01 -NAME="
+                          , sub(".sgrd", "", sub("DEM_", "LAI_0.01_", basename(DEM_name)))
+                          , " -TYPE=7")
+  system(system.command) 
+}
+
+## FLAT DEM (1)
+input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
+if (!file.exists(paste0(path.to.data, input.name.DEM.flat)))
+{
+  system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                          , paste0("\"", path.to.data, DEM_name, "\"")
+                          , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                          , paste0("\"", path.to.data, input.name.DEM.flat, "\"")
+                          , " -FORMULA=1 -NAME="
+                          , sub(".sgrd", "", sub("DEM_", "DEM_FLAT_", basename(DEM_name)))
+                          , " -TYPE=7")
+  system(system.command) 
+}
 
 ###############################################################################
 ### CLOUDS (EarthEnv)
-### CLIB & REPROJECT INPUT data (must be a conserving angle projection !!)
+## CLIP & REPROJECT INPUT data (must be a conserving angle projection !!)
+## DOWNSCALE (geographically weighted regression)
 ###############################################################################
 
 new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.clouds, "/")
@@ -219,7 +248,8 @@ for (mm in list.mm)
 
 ###############################################################################
 ### TEMPERATURE (CHELSA)
-### CLIB & REPROJECT INPUT data (must be a conserving angle projection !!)
+## CLIP & REPROJECT INPUT data (must be a conserving angle projection !!)
+## DOWNSCALE (geographically weighted regression)
 ###############################################################################
 
 ### CHELSA Temperature : mean, max, min : CURRENT -----------------------------
@@ -289,7 +319,7 @@ for (mm in list.mm)
   }
 }
 
-### CHELSA Temperature : mean, max, min : PAST --------------------------------
+### CHELSA Temperature : mean, max, min : PAST TIMESERIES ---------------------
 new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.tempCHELSA, "_TS_PAST/")
 if (!dir.exists(paste0(path.to.data, "TEMPERATURE/RAW/", new.folder.name1)))
 {
@@ -330,7 +360,7 @@ for(ye in past.years)
                                 , paste0("\"", path.to.data, output.name, "\"")
                                 , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
                                 , paste0("\"", path.to.data, output.name, "\"")
-                                , " -FORMULA=\"g1 / 10\""
+                                , " -FORMULA=\"g1 / 10 - 273.15\""
                                 , " -NAME="
                                 , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
                                 , " -TYPE=7")
@@ -483,7 +513,7 @@ for (sce in fut.ts.scenarios)
                                     , paste0("\"", path.to.data, output.name, "\"")
                                     , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
                                     , paste0("\"", path.to.data, output.name, "\"")
-                                    , " -FORMULA=\"g1 / 10\""
+                                    , " -FORMULA=\"g1 / 10 - 273.15\""
                                     , " -NAME="
                                     , paste0("\"", sub(extension(output.name), "", basename(output.name)), "\"")
                                     , " -TYPE=7")
@@ -516,7 +546,11 @@ for (sce in fut.ts.scenarios)
 }
 
 
-###################################################################
+###############################################################################
+### LAPSE-RATE (ERA5)
+## CLIP & REPROJECT INPUT data (must be a conserving angle projection !!)
+## DOWNSCALE (geographically weighted regression)
+###############################################################################
 
 # new.folder.name.1 = paste0("../", zone_name.tempERA, "_longlat_resolution0.75/")
 # if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.1)))
@@ -529,66 +563,15 @@ if (!dir.exists(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.2)))
   dir.create(paste0(path.to.data, "LAPSE_RATE/RAW/", new.folder.name.2))
 }
 
-# ### ERA-interim temperature
-# for (mm in 1:12)
-# {
-#   input.name.nc = paste0("LAPSE_RATE/RAW/ERAinterim_modelLevels_Temperature_2017_", mm, ".nc")
-#   
-#   for (lev in 1:28)
-#   {
-#     cat("\n ==> Extract and average ERA-interim temperature for month ", mm, " level ", lev, "\n")
-#     
-#     setwd(path.to.data)
-#     input.ras = brick(input.name.nc, level=lev)
-#     input.ras = stack(input.ras)
-#     input.ras = mean(input.ras, na.rm = T)
-#     new.file.name = paste0("ERAinterim_TEMP_MEAN_", zone_name.tempERA, "_longlat_resolution", unique(res(input.ras)),"_", mm,"_LEVEL", lev, ".img")
-#     output.name = sub(
-#       basename(input.name.nc),
-#       paste0(new.folder.name.1, new.file.name),
-#       input.name.nc
-#     )
-#     if (!file.exists(paste0(path.to.data, output.name)))
-#     {
-#       writeRaster(input.ras, filename = output.name)
-#     }
-#     
-#     ### NOT WORKING : gives a 2 column band
-#     # setwd(path.to.SAGA)
-#     # 
-#     # cat("\n ==> Reproject ERA-interim temperature for month ", mm, " level ", lev, "\n")
-#     # 
-#     # input.name = output.name
-#     # new.file.name = paste0("ERAinterim_TEMP_MEAN_", zone_name.tempERA, "_", proj.name, "_resolution", proj.res.tempERA,"_", mm, "_LEVEL", lev, ".sgrd")
-#     # output.name = sub(
-#     #   basename(input.name.nc),
-#     #   paste0(new.folder.name.2, new.file.name),
-#     #   input.name.nc
-#     # )
-#     # 
-#     # if (!file.exists(paste0(path.to.data, output.name)))
-#     # {
-#     #   system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-#     #                           , paste0("\"", proj.value, "\"")
-#     #                           , " -SOURCE="
-#     #                           , paste0("\"", path.to.data, input.name, "\"")
-#     #                           , " -GRIDS="
-#     #                           , paste0("\"", path.to.data, output.name, "\"")
-#     #                           , " -RESAMPLING=3") ## B-spline interpolation
-#     #   
-#     #   system(system.command)
-#     # }
-#   }
-# }
 
 ### ERA5 temperature
-past.years = 1979:2019
+ERA5.years = 1979:2019
 levels.pressure = rev(c(seq(250, 750, 50), seq(775, 1000, 25)))
 for (lev in 1:length(levels.pressure))
 {
   input.name.nc = paste0("LAPSE_RATE/RAW/ERA5_modelLevels_Temperature_1979-2019_LEVEL", lev, "_", levels.pressure[lev], "hPa.nc")
   
-  for (ye in past.years)
+  for (ye in ERA5.years)
   {
     cat("\n ==> Extract and average ERA-interim temperature for level ", lev, " and year ", ye, "\n")
     
@@ -596,6 +579,10 @@ for (lev in 1:length(levels.pressure))
     input.ras = brick(input.name.nc)
     input.ras = stack(input.ras)
     input.ras = input.ras[[grep(paste0("^X", ye), names(input.ras))]]
+    origin(input.ras) = origin(DEM_ras)
+    # input.ras = projectRaster(input.ras, res = unique(res(input.ras)), crs= CRS(proj.longlat))
+    input.ras = crop(input.ras, proj.extent)
+    
     new.mm = sapply(names(input.ras), function(x) strsplit(x, "[.]")[[1]][2])
     # new.file.name = paste0("ERA5_TEMP_MEAN_", zone_name.tempERA, "_longlat_resolution", unique(res(input.ras))
     #                        , "_", as.numeric(new.mm) ,"_LEVEL", lev, ".img")
