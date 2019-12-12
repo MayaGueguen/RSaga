@@ -547,6 +547,64 @@ for (sce in fut.ts.scenarios)
 
 
 ###############################################################################
+### GMTED2010
+## CLIP & REPROJECT INPUT data (must be a conserving angle projection !!)
+## DOWNSCALE (geographically weighted regression)
+###############################################################################
+
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.GMTED, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name1)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name2))
+}
+
+
+cat("\n ==> Reproject GMTED2010 DEM \n")
+
+input.name = "DEM/RAW/mn30_grd.img"
+new.file.name = paste0("DEM_REF_", zone_name, "_", proj.name, "_resolution", proj.res.GMTED, ".sgrd")
+output.name = sub(
+  basename(input.name),
+  paste0(new.folder.name1, new.file.name),
+  input.name
+)
+
+if (!file.exists(paste0(path.to.data, output.name)))
+{
+  clipReproject(param.input = input.name
+                , param.output = output.name
+                , param.extent = proj.extent
+                , param.proj = proj.value
+                , param.res = proj.res.tempCHELSA)
+}
+
+cat("\n ==> Downscale GMTED2010 DEM \n")
+
+input.name = output.name
+new.file.name = paste0("DEM_REF_", zone_name, "_", proj.name, "_resolution", proj.res, ".sgrd")
+output.name = paste0("DEM/RAW/", new.folder.name2, new.file.name)
+
+if (!file.exists(paste0(path.to.data, output.name)))
+{
+  system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                          , paste0("\"", path.to.data, input.name, "\"")
+                          , " -OUTPUT="
+                          , paste0("\"", path.to.data, output.name, "\"")
+                          , " -SCALE_DOWN=3"
+                          , " -TARGET_DEFINITION=1"
+                          , " -TARGET_TEMPLATE="
+                          , paste0("\"", path.to.data, DEM_name, "\""))
+  
+  system(system.command)
+}
+
+
+###############################################################################
 ### LAPSE-RATE (ERA5)
 ## CLIP & REPROJECT INPUT data (must be a conserving angle projection !!)
 ## DOWNSCALE (geographically weighted regression)
@@ -638,39 +696,6 @@ for (lev in 1:length(levels.pressure))
     # }
   }
 }
-
-###################################################################
-
-new.folder.name = paste0("../", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, "/")
-if (!dir.exists(paste0(path.to.data, "DEM/RAW/", new.folder.name)))
-{
-  dir.create(paste0(path.to.data, "DEM/RAW/", new.folder.name))
-}
-
-### GMTED2010 DEM
-cat("\n ==> Reproject GMTED2010 DEM \n")
-
-input.name = paste0("DEM/RAW/30N000E_20101117_gmted_mea075.tif")
-new.file.name = paste0("DEM_REF_", zone_name.GMTED, "_", proj.name, "_resolution", proj.res.GMTED, ".sgrd")
-output.name = sub(
-  basename(input.name),
-  paste0(new.folder.name, new.file.name),
-  input.name
-)
-
-if (!file.exists(paste0(path.to.data, output.name)))
-{
-  system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-                          , paste0("\"", proj.value, "\"")
-                          , " -SOURCE="
-                          , paste0("\"", path.to.data, input.name, "\"")
-                          , " -GRIDS="
-                          , paste0("\"", path.to.data, output.name, "\"")
-                          , " -RESAMPLING=3") ## B-spline interpolation
-  
-  system(system.command)
-}
-
 
 ###################################################################
 ### LAPSE RATE
