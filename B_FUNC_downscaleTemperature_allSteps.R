@@ -75,9 +75,6 @@ DEM_name = "DEM/RAW/DEM_Greenland_ETRS89_resolution90.img"
 DEM_ras = raster(DEM_name)
 proj.res = unique(res(DEM_ras))[1]
 
-# tmp = projectExtent(DEM_ras, crs = proj.longlat)
-# proj.extent = extent(tmp)
-
 zone.file.name = paste0(zone_name, "_", proj.name, "_resolution", proj.res)
 zone.folder.name = paste0(zone.file.name, "/")
 
@@ -783,8 +780,8 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
   input.name.dem = VAR
   input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
   
-  # for (ye in c(1979:2020, seq(2030, 2100, 10)))
-  ye = 2018
+  for (ye in c(1979:2020, seq(2030, 2100, 10)))
+  # ye = 1979
   {
     for (mm in 1:12)
     {
@@ -804,9 +801,9 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
         cat("ENDING POINT : ", ISOdate(yy.end, mm.end, dd.end), "\n")
         cat("NB DAYS : ", nb.days, "\n")
         
-        output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
-        output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
-        output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, ".sgrd")
+        output.name.direct = paste0(new.folder.name, "DirectRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", ye, ".sgrd")
+        output.name.diffus = paste0(new.folder.name, "DiffuseRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", ye, ".sgrd")
+        output.name.total = paste0(new.folder.name, "TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", mm, "_", ye, ".sgrd")
         if (length(grep("FLAT", VAR)) > 0){
           output.name.direct = sub(extension(output.name.direct), "_DEM_FLAT.sgrd", output.name.direct)
           output.name.diffus = sub(extension(output.name.diffus), "_DEM_FLAT.sgrd", output.name.diffus)
@@ -826,8 +823,10 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
                                   , paste0("\"", path.to.data, output.name.diffus, "\"")
                                   , " -GRD_TOTAL="
                                   , paste0("\"", path.to.data, output.name.total, "\"")
+                                  , " -GRD_FLAT="
+                                  , paste0("\"", path.to.data, sub(".sgrd$", "_DEM_FLAT.sgrd", output.name.total), "\"")
                                   , " -LOCATION=1 -PERIOD=2 -DAY=", ye, "-", mm, "-1 -DAY_STOP=", ye, "-", mm, "-", nb.days
-                                  , " -DAYS_STEP=1")
+                                  , " -DAYS_STEP=1 -HOUR_STEP=0.5")
           
           
           system(system.command)
