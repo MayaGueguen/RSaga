@@ -216,24 +216,26 @@ for(ye in past.years)
                     , param.res = proj.res.precipCHELSA)
     }
     
-    cat("\n ==> Downscale CHELSA precipitation for year ", ye, " and month ", mm, "\n")
+    cat("\n ==> GWR of CHELSA precipitation in function of DEM for year ", ye, " and month ", mm, "\n")
     
     input.name = output.name
     new.file.name = paste0("PREC_", zone.file.name, "_", ye, "_", mm, ".sgrd")
     output.name = paste0("PRECIPITATION/RAW/", new.folder.name2, new.file.name)
+    output.name.1 = sub(extension(output.name), "_regression.sgrd", output.name)
+    output.name.2 = sub(extension(output.name), "_regression_rescorr.sgrd", output.name)
     
-    if (!file.exists(paste0(path.to.data, output.name)))
+    if (!file.exists(paste0(path.to.data, output.name.1)))
     {
-      system.command = paste0("saga_cmd grid_tools 0 -INPUT="
-                              , paste0("\"", path.to.data, input.name, "\"")
-                              , " -OUTPUT="
-                              , paste0("\"", path.to.data, output.name, "\"")
-                              , " -SCALE_DOWN=3"
-                              , " -TARGET_DEFINITION=1"
-                              , " -TARGET_TEMPLATE="
-                              , paste0("\"", path.to.data, DEM_name, "\""))
+      system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
+                              , paste0("\"", path.to.data, DEM_name, "\"")
+                              , " -REGRESSION="
+                              , paste0("\"", path.to.data, output.name.1, "\"")
+                              , " -REG_RESCORR="
+                              , paste0("\"", path.to.data, output.name.2, "\"")
+                              , " -DEPENDENT="
+                              , paste0("\"", path.to.data, input.name, "\""))
       
-      system(system.command)
+      system(system.command) 
     }
   }
 }
@@ -279,105 +281,18 @@ for (sce in fut.scenarios)
                         , param.res = proj.res.precipCHELSA)
         }
         
-        cat("\n ==> Downscale CHELSA precipitation for ", sce, rcp, ye, " and month ", mm, "\n")
+        cat("\n ==> GWR of CHELSA precipitation in function of DEM for for ", sce, rcp, ye, " and month ", mm, "\n")
         
         input.name = output.name
         new.file.name = paste0("PREC_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
         output.name = paste0("PRECIPITATION/RAW/", new.folder.name2, new.file.name)
-        
-        if (!file.exists(paste0(path.to.data, output.name)))
-        {
-          system.command = paste0("saga_cmd grid_tools 0 -INPUT="
-                                  , paste0("\"", path.to.data, input.name, "\"")
-                                  , " -OUTPUT="
-                                  , paste0("\"", path.to.data, output.name, "\"")
-                                  , " -SCALE_DOWN=3"
-                                  , " -TARGET_DEFINITION=1"
-                                  , " -TARGET_TEMPLATE="
-                                  , paste0("\"", path.to.data, DEM_name, "\""))
-          
-          system(system.command)
-        }
-      }
-    }
-  }
-}
-
-
-###################################################################
-### GEOGRAPHICALLY weighted regression
-###################################################################
-
-precip.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res.precip, "/")
-new.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res, "/")
-if (!dir.exists(paste0(path.to.data, new.folder.name)))
-{
-  dir.create(paste0(path.to.data, new.folder.name))
-}
-
-### Monthly precipitations in function of DEM : CURRENT
-for (mm in 1:12)
-{
-  cat("\n ==> GWR of CHELSA precipitations in function of DEM for month ", mm, "\n")
-  
-  predic.name = DEM_name
-  
-  precip.file.name = paste0("PRECIP_", zone_name, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".sgrd")
-  input.name = paste0(precip.folder.name, precip.file.name)
-  output.name = sub(proj.res.precip, proj.res, precip.file.name)
-  output.name.1 = paste0(new.folder.name, sub(extension(output.name), "_regression.sgrd", output.name))
-  output.name.2 = paste0(new.folder.name, sub(extension(output.name), "_regression_rescorr.sgrd", output.name))
-  
-  if (!file.exists(paste0(path.to.data, output.name.1)))
-  {
-    system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
-                            , paste0("\"", path.to.data, predic.name, "\"")
-                            , " -REGRESSION="
-                            , paste0("\"", path.to.data, output.name.1, "\"")
-                            , " -REG_RESCORR="
-                            , paste0("\"", path.to.data, output.name.2, "\"")
-                            , " -DEPENDENT="
-                            , paste0("\"", path.to.data, input.name, "\""))
-    
-    system(system.command) 
-  }
-}
-
-### Not good enough ? Maybe try :
-### Clouds in function of DEM
-### Monthly precipitations in function of DEM and Clouds
-
-precip.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res.precip, "_FUTURE/")
-new.folder.name = paste0("PRECIPITATION/", zone_name, "_", proj.name, "_resolution", proj.res, "_FUTURE/")
-if (!dir.exists(paste0(path.to.data, new.folder.name)))
-{
-  dir.create(paste0(path.to.data, new.folder.name))
-}
-
-### Monthly precipitations in function of DEM : FUTURE
-for (sce in fut.scenarios)
-{
-  for (rcp in fut.rcp)
-  {
-    for (ye in fut.years)
-    {
-      for (mm in 1:12)
-      {
-        cat("\n ==> GWR of CHELSA precipitations in function of DEM for ", sce, rcp, ye, " and month ", mm, "\n")
-        
-        predic.name = DEM_name
-        
-        precip.file.name = paste0("PRECIP_", zone_name, "_", proj.name, "_resolution", proj.res.precip, "_"
-                                  , sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
-        input.name = paste0(precip.folder.name, precip.file.name)
-        output.name = sub(proj.res.precip, proj.res, precip.file.name)
-        output.name.1 = paste0(new.folder.name, sub(extension(output.name), "_regression.sgrd", output.name))
-        output.name.2 = paste0(new.folder.name, sub(extension(output.name), "_regression_rescorr.sgrd", output.name))
+        output.name.1 = sub(extension(output.name), "_regression.sgrd", output.name)
+        output.name.2 = sub(extension(output.name), "_regression_rescorr.sgrd", output.name)
         
         if (!file.exists(paste0(path.to.data, output.name.1)))
         {
           system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
-                                  , paste0("\"", path.to.data, predic.name, "\"")
+                                  , paste0("\"", path.to.data, DEM_name, "\"")
                                   , " -REGRESSION="
                                   , paste0("\"", path.to.data, output.name.1, "\"")
                                   , " -REG_RESCORR="
@@ -391,3 +306,7 @@ for (sce in fut.scenarios)
     }
   }
 }
+
+### Not good enough ? Maybe try :
+### Clouds in function of DEM
+### Monthly precipitations in function of DEM and Clouds
