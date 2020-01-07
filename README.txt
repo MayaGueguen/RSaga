@@ -21,5 +21,7 @@ sapply(xx, ff)
 ###########################################################################
 ## IF SPACE IS NEEDED !
 ## Some files can be erased and quite quickly reproduced.
-## 	- CLOUDS/Alps_Mercator_resolution25/
-## 	- TEMPERATURE/Alps_Mercator_resolution25/
+## 	- CLOUDS/[user-defined]_Mercator_resolution[user-defined]/
+## 	- PRECIPITATION/[user-defined]_ETRS89_resolution[user-defined]/
+## 	- SOLAR_RADIATION/[user-defined]_Mercator_resolution[user-defined]/Quotient...
+## 	- TEMPERATURE/[user-defined]_Mercator_resolution[user-defined]/
