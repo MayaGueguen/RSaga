@@ -1,6 +1,5 @@
 
 rm(list=ls())
-# .libPaths("/bettik/emabio/R_PKG_NIX/")
 library(raster)
 library(rgdal)
 
@@ -42,10 +41,6 @@ fut.ts.years = seq(2010, 2100, 10)
 
 setwd(path.to.SAGA)
 
-### !!!!
-## PROBLEM : Code seems fine, but reprojected maps are cut
-## They have be done separately with ARCGIS
-### !!!!
 
 ###################################################################
 ### FUNCTION : CLIP & REPROJECT
@@ -162,24 +157,26 @@ for (mm in list.mm)
                   , param.res = proj.res.precipCHELSA)
   }
   
-  cat("\n ==> Downscale CHELSA precipitation for month ", mm, "\n")
+  cat("\n ==> GWR of CHELSA precipitation in function of DEM for month ", mm, "\n")
   
   input.name = output.name
   new.file.name = paste0("PREC_", zone.file.name, "_", mm, ".sgrd")
   output.name = paste0("PRECIPITATION/RAW/", new.folder.name2, new.file.name)
+  output.name.1 = sub(extension(output.name), "_regression.sgrd", output.name)
+  output.name.2 = sub(extension(output.name), "_regression_rescorr.sgrd", output.name)
   
-  if (!file.exists(paste0(path.to.data, output.name)))
+  if (!file.exists(paste0(path.to.data, output.name.1)))
   {
-    system.command = paste0("saga_cmd grid_tools 0 -INPUT="
-                            , paste0("\"", path.to.data, input.name, "\"")
-                            , " -OUTPUT="
-                            , paste0("\"", path.to.data, output.name, "\"")
-                            , " -SCALE_DOWN=3"
-                            , " -TARGET_DEFINITION=1"
-                            , " -TARGET_TEMPLATE="
-                            , paste0("\"", path.to.data, DEM_name, "\""))
+    system.command = paste0("saga_cmd statistics_regression 14 -PREDICTORS="
+                            , paste0("\"", path.to.data, DEM_name, "\"")
+                            , " -REGRESSION="
+                            , paste0("\"", path.to.data, output.name.1, "\"")
+                            , " -REG_RESCORR="
+                            , paste0("\"", path.to.data, output.name.2, "\"")
+                            , " -DEPENDENT="
+                            , paste0("\"", path.to.data, input.name, "\""))
     
-    system(system.command)
+    system(system.command) 
   }
 }
 
