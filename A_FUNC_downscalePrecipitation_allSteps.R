@@ -183,149 +183,76 @@ for (mm in list.mm)
   }
 }
 
-
-
-new.folder.name = paste0("../", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "/")
-if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name)))
+### CHELSA Precipitation : PAST TIMESERIES ------------------------------------
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.precipCHELSA, "_TS_PAST/")
+if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", sub("/$", "_TS_PAST/", zone.folder.name))
+if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name2))
 }
 
-
-### Monthly precipitations
-for (mm in 1:12)
+for(ye in past.years)
 {
-  cat("\n ==> Reproject CHELSA precipitations for month ", mm, "\n")
-  
-  input.name = paste0("PRECIPITATION/RAW/CHELSA_prec_", mm, "_V1.2_land.tif")
-  new.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".sgrd")
-  output.name = sub(
-    basename(input.name),
-    paste0(new.folder.name, new.file.name),
-    input.name
-  )
-  
-  if (!file.exists(paste0(path.to.data, output.name)))
+  for (mm in list.mm)
   {
-    # system.command = paste0("saga_cmd grid_tools 12 -INPUT="
-    #                         , paste0("\"", path.to.data, input.name, "\"")
-    #                         , " -OUTPUT="
-    #                         , paste0("\"", path.to.data, output.name, "\"")
-    #                         , " -METHOD=0 -IDENTITY=\"new_param.txt\"")
-    # 
-    # system(system.command)
-    # 
-    # system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-    #                         , paste0("\"", proj.value, "\"")
-    #                         , " -SOURCE="
-    #                         , paste0("\"", path.to.data, output.name, "\"")
-    #                         , " -GRIDS="
-    #                         , paste0("\"", path.to.data, output.name, "\"")
-    #                         , " -RESAMPLING=3") ## B-spline interpolation
-    # 
-    # system(system.command)
+    cat("\n ==> Reproject CHELSA precipitation for year ", ye, " and month ", mm, "\n")
+    
+    input.name = paste0("PRECIPITATION/RAW_TS_PAST/CHELSA_prec_", ye, "_", mm, "_V1.2.1.tif")
+    new.file.name = paste0("PREC_", zone_name, "_", proj.name, "_resolution"
+                           , proj.res.precipCHELSA, "_", ye, "_", mm, ".sgrd")
+    output.name = sub(
+      basename(input.name),
+      paste0(new.folder.name1, new.file.name),
+      input.name
+    )
+    
+    if (!file.exists(paste0(path.to.data, output.name)))
+    {
+      clipReproject(param.input = input.name
+                    , param.output = output.name
+                    , param.extent = proj.extent
+                    , param.proj = proj.value
+                    , param.res = proj.res.precipCHELSA)
+    }
+    
+    cat("\n ==> Downscale CHELSA precipitation for year ", ye, " and month ", mm, "\n")
+    
+    input.name = output.name
+    new.file.name = paste0("PREC_", zone.file.name, "_", ye, "_", mm, ".sgrd")
+    output.name = paste0("PRECIPITATION/RAW/", new.folder.name2, new.file.name)
+    
+    if (!file.exists(paste0(path.to.data, output.name)))
+    {
+      system.command = paste0("saga_cmd grid_tools 0 -INPUT="
+                              , paste0("\"", path.to.data, input.name, "\"")
+                              , " -OUTPUT="
+                              , paste0("\"", path.to.data, output.name, "\"")
+                              , " -SCALE_DOWN=3"
+                              , " -TARGET_DEFINITION=1"
+                              , " -TARGET_TEMPLATE="
+                              , paste0("\"", path.to.data, DEM_name, "\""))
+      
+      system(system.command)
+    }
   }
 }
 
-###################################################################
-### REPROJECT INPUT data (must be EQUAL AREA projection !!)
-### FUTURE
-###################################################################
-
-
-new.folder.name = paste0("../", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_FUTURE/")
-if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name)))
+### CHELSA Precipitation : FUTURE ---------------------------------------------
+new.folder.name1 = paste0("../", zone_name, "_", proj.name, "_resolution", proj.res.precipCHELSA, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name1)))
 {
-  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name))
+  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name1))
+}
+new.folder.name2 = paste0("../", sub("/$", "_FUTURE/", zone.folder.name))
+if (!dir.exists(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name2)))
+{
+  dir.create(paste0(path.to.data, "PRECIPITATION/RAW/", new.folder.name2))
 }
 
-# for (sce in fut.scenarios)
-# {
-#   for (rcp in fut.rcp)
-#   {
-#     for (ye in fut.years)
-#     {
-#       ### Monthly precipitations
-#       for (mm in 1:12)
-#       {
-#         cat("\n ==> Reproject CHELSA precipitations for month ", mm, "\n")
-#         
-#         input.name = paste0("PRECIPITATION/RAW/FUTURE/CHELSA_pr_mon_", sce, "_rcp", rcp, "_r1i1p1_g025.nc_", mm, "_", ye, ".tif")
-#         new.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
-#                                , sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
-#         output.name = sub(
-#           basename(input.name),
-#           paste0(new.folder.name, new.file.name),
-#           input.name
-#         )
-#         
-#         if (!file.exists(paste0(path.to.data, output.name)))
-#         {
-#           system.command = paste0("saga_cmd pj_proj4 3 -CRS_PROJ4="
-#                                   , paste0("\"", proj.value, "\"")
-#                                   , " -SOURCE="
-#                                   , paste0("\"", path.to.data, input.name, "\"")
-#                                   , " -GRIDS="
-#                                   , paste0("\"", path.to.data, output.name, "\"")
-#                                   , " -RESAMPLING=3") ## B-spline interpolation
-#           
-#           system(system.command)
-#         }
-#       }
-#     }
-#   }
-# }
-
-
-###################################################################
-### CLIP INPUT data
-###################################################################
-
-DEM_ras = raster(paste0(path.to.data, sub(extension(DEM_name), ".sdat", DEM_name)))
-
-precip.folder.name = paste0("PRECIPITATION/", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "/")
-if (!dir.exists(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name))))
-{
-  dir.create(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name)))
-}
-
-### Monthly precipitations : CURRENT
-for (mm in 1:12)
-{
-  cat("\n ==> Clip CHELSA precipitations for month ", mm, "\n")
-  
-  precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_", mm, ".tif")
-  input.name = paste0(precip.folder.name, precip.file.name)
-  output.name = paste0(sub(zone_name.precip, zone_name, precip.folder.name),
-                       sub(zone_name.precip, zone_name, precip.file.name))
-  
-  if (!file.exists(paste0(path.to.data, output.name)))
-  {
-    system.command = paste0("saga_cmd grid_tools 31 -GRIDS="
-                            , paste0("\"", path.to.data, input.name, "\"")
-                            , " -CLIPPED="
-                            , paste0("\"", path.to.data, output.name, "\"")
-                            , " -EXTENT=0 -XMIN="
-                            , extent(DEM_ras)[1]
-                            , " -XMAX="
-                            , extent(DEM_ras)[2]
-                            , " -YMIN="
-                            , extent(DEM_ras)[3]
-                            , " -YMAX="
-                            , extent(DEM_ras)[4]
-                            , " -BUFFER=0.000000")
-    system(system.command)
-  }
-}
-
-
-precip.folder.name = paste0("PRECIPITATION/", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_FUTURE/")
-if (!dir.exists(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name))))
-{
-  dir.create(paste0(path.to.data, sub(zone_name.precip, zone_name, precip.folder.name)))
-}
-
-### Monthly precipitations : FUTURE
 for (sce in fut.scenarios)
 {
   for (rcp in fut.rcp)
@@ -334,35 +261,51 @@ for (sce in fut.scenarios)
     {
       for (mm in 1:12)
       {
-        cat("\n ==> Clip CHELSA precipitations for ", sce, rcp, ye, " and month ", mm, "\n")
+        cat("\n ==> Reproject CHELSA precipitation for ", sce, rcp, ye, " and month ", mm, "\n")
         
-        precip.file.name = paste0("PRECIP_", zone_name.precip, "_", proj.name, "_resolution", proj.res.precip, "_"
-                               , sce, "_rcp", rcp, "_", mm, "_", ye, ".tif")
-        input.name = paste0(precip.folder.name, precip.file.name)
-        output.name = paste0(sub(zone_name.precip, zone_name, precip.folder.name),
-                             sub(zone_name.precip, zone_name, precip.file.name))
+        input.name = paste0("PRECIPITATION/RAW_FUTURE/CHELSA_pr_mon_"
+                            , sce, "_rcp", rcp, "_r1i1p1_g025.nc_", mm, "_", ye, ".tif")
+        new.file.name = paste0("PREC_", zone_name, "_", proj.name, "_resolution", proj.res.precipCHELSA
+                               , "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+        output.name = sub(
+          basename(input.name),
+          paste0(new.folder.name1, new.file.name),
+          input.name
+        )
         
         if (!file.exists(paste0(path.to.data, output.name)))
         {
-          system.command = paste0("saga_cmd grid_tools 31 -GRIDS="
+          clipReproject(param.input = input.name
+                        , param.output = output.name
+                        , param.extent = proj.extent
+                        , param.proj = proj.value
+                        , param.res = proj.res.precipCHELSA)
+        }
+        
+        cat("\n ==> Downscale CHELSA precipitation for ", sce, rcp, ye, " and month ", mm, "\n")
+        
+        input.name = output.name
+        new.file.name = paste0("PREC_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+        output.name = paste0("PRECIPITATION/RAW/", new.folder.name2, new.file.name)
+        
+        if (!file.exists(paste0(path.to.data, output.name)))
+        {
+          system.command = paste0("saga_cmd grid_tools 0 -INPUT="
                                   , paste0("\"", path.to.data, input.name, "\"")
-                                  , " -CLIPPED="
+                                  , " -OUTPUT="
                                   , paste0("\"", path.to.data, output.name, "\"")
-                                  , " -EXTENT=0 -XMIN="
-                                  , extent(DEM_ras)[1]
-                                  , " -XMAX="
-                                  , extent(DEM_ras)[2]
-                                  , " -YMIN="
-                                  , extent(DEM_ras)[3]
-                                  , " -YMAX="
-                                  , extent(DEM_ras)[4]
-                                  , " -BUFFER=0.000000")
+                                  , " -SCALE_DOWN=3"
+                                  , " -TARGET_DEFINITION=1"
+                                  , " -TARGET_TEMPLATE="
+                                  , paste0("\"", path.to.data, DEM_name, "\""))
+          
           system(system.command)
         }
       }
     }
   }
 }
+
 
 ###################################################################
 ### GEOGRAPHICALLY weighted regression
