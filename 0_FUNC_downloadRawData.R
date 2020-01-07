@@ -93,7 +93,7 @@ foreach(mm = combi$mm, sce = combi$sce, rcp = combi$rcp, ye = combi$ye) %do%
   }
 
 ## FUTURE TIMESERIES
-combi = expand.grid(mm = list.mm, i.sce = length(fut.ts.scenarios1), rcp = fut.ts.rcp, ye = fut.ts.years)
+combi = expand.grid(mm = list.mm, i.sce = 1:length(fut.ts.scenarios1), rcp = fut.ts.rcp, ye = fut.ts.years)
 foreach(mm = combi$mm, i.sce = combi$i.sce, rcp = combi$rcp, ye = combi$ye) %do%
   {
     cat("\n ==> Scenario ", fut.ts.scenarios2[i.sce], " year ", ye, " month ",  mm, " rcp ", rcp)

@@ -332,7 +332,7 @@ for(ye in past.years)
     for (i in 2:3)
     {
       cat("\n ==> Reproject CHELSA ", c("MEAN","MAX","MIN")[i], "temperature for year ", ye, " and month ", mm, "\n")
-
+      
       input.name = paste0("TEMPERATURE/RAW_TS_PAST/CHELSA_", c("temp","tmax","tmin")[i], "_", ye, "_", mm, "_V1.2.1.tif")
       new.file.name = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone_name, "_"
                              , proj.name, "_resolution", proj.res.tempCHELSA, "_", ye, "_", mm, ".sgrd")
@@ -341,7 +341,7 @@ for(ye in past.years)
         paste0(new.folder.name1, new.file.name),
         input.name
       )
-
+      
       if (!file.exists(paste0(path.to.data, output.name)))
       {
         clipReproject(param.input = input.name
@@ -349,7 +349,7 @@ for(ye in past.years)
                       , param.extent = proj.extent
                       , param.proj = proj.value
                       , param.res = proj.res.tempCHELSA)
-
+        
         system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
                                 , paste0("\"", path.to.data, output.name, "\"")
                                 , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
@@ -662,7 +662,7 @@ for (lev in 1:length(levels.pressure))
                            paste0(new.folder.name2, x),
                            input.name.nc
                          ))
-
+    
     for (i in 1:length(input.name))
     {
       if (!file.exists(paste0(path.to.data, output.name[i])))
@@ -719,7 +719,7 @@ for (ye in ERA5.years)
     new.file.name = paste0("LAPSE_RATE_", zone_name, "_", proj.name, "_resolution", proj.res, "_", mm, "_", ye, ".sgrd")
     new.file.name = sub(extension(new.file.name), "_coeff2.sgrd", new.file.name)
     output.name = paste0("LAPSE_RATE/RAW/", new.folder.name2, new.file.name)
-
+    
     if (!file.exists(paste0(path.to.data, output.name)))
     {
       system.command = paste0("saga_cmd grid_tools 0 -INPUT="
@@ -730,7 +730,7 @@ for (ye in ERA5.years)
                               , " -TARGET_DEFINITION=1"
                               , " -TARGET_TEMPLATE="
                               , paste0("\"", path.to.data, DEM_name, "\""))
-
+      
       system(system.command)
     }
   }
@@ -774,20 +774,18 @@ if (!dir.exists(paste0(path.to.data, new.folder.name)))
   dir.create(paste0(path.to.data, new.folder.name))
 }
 
-# input.name.DEM.flat = sub(basename(DEM_name), sub("DEM_", "DEM_FLAT_", basename(DEM_name)), DEM_name)
 for (VAR in c(DEM_name, input.name.DEM.flat))
 {
   input.name.dem = VAR
   input.name.svf = sub(extension(input.name.dem), "_SVF.sgrd", input.name.dem)
   
   for (ye in c(1979:2020, seq(2030, 2100, 10)))
-  # ye = 1979
   {
     for (mm in 1:12)
     {
       dd = 1
       {
-        cat("\n ==> Calculate solar radiation for month ", mm, " from day ", dd, "\n")
+        cat("\n ==> Calculate solar radiation for year ", ye, " and month ", mm, " from day ", dd, "\n")
         mm = as.numeric(mm)
         mm.end = mm + 1
         if (mm == 12) mm.end = 1
@@ -823,13 +821,263 @@ for (VAR in c(DEM_name, input.name.DEM.flat))
                                   , paste0("\"", path.to.data, output.name.diffus, "\"")
                                   , " -GRD_TOTAL="
                                   , paste0("\"", path.to.data, output.name.total, "\"")
-                                  , " -GRD_FLAT="
-                                  , paste0("\"", path.to.data, sub(".sgrd$", "_DEM_FLAT.sgrd", output.name.total), "\"")
                                   , " -LOCATION=1 -PERIOD=2 -DAY=", ye, "-", mm, "-1 -DAY_STOP=", ye, "-", mm, "-", nb.days
                                   , " -DAYS_STEP=1 -HOUR_STEP=0.5")
           
           
           system(system.command)
+        }
+      }
+    }
+  }
+}
+
+
+
+
+###################################################################
+### SOLAR RADIATION corrected by clouds
+###################################################################
+
+solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+clouds.folder.name = paste0("CLOUDS/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+
+for (VAR in c(DEM_name, input.name.DEM.flat))
+{
+  input.name.dem = VAR
+  
+  for (ye in c(1979:2020, seq(2030, 2100, 10)))
+  {
+    for (mm in list.mm)
+    {
+      cat("\n ==> Correct solar radiation by clouds for year ", ye, " and month ", mm, "\n")
+      
+      ## Total radiation
+      a.name = paste0("TotalRad_", zone_name, "_", proj.name,"_resolution", proj.res, "_", as.numeric(mm), "_", ye, ".sgrd")
+      a.name = paste0(solar.folder.name, a.name)
+      if (length(grep("FLAT", VAR)) > 0){
+        a.name = sub(extension(a.name), "_DEM_FLAT.sgrd", a.name)
+      }
+      
+      ## Corrected cloud cover
+      b.name = paste0("CLOUDS_", zone.file.name, "_", mm, ".sgrd")
+      b.name = paste0(clouds.folder.name, b.name)
+      b.name = sub(extension(b.name), "_regression_rescorr.sgrd", b.name)
+      
+      ## Corrected solar radiation
+      solarrad.name = paste0("SolarRadiation_", zone.file.name, "_", mm, "_", ye, ".sgrd")
+      solarrad.name = paste0(solar.folder.name, solarrad.name)
+      if (length(grep("FLAT", VAR)) > 0){
+        solarrad.name = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
+      }
+      
+      if (!file.exists(solarrad.name))
+      {
+        input.name = c(a.name, b.name)
+        
+        system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
+                                , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                                , paste0("\"", path.to.data, solarrad.name, "\"")
+                                , " -FORMULA=\"g1 * (1 - 0.75 * ((g2 / 10000) ^ 3.4))\""
+                                , " -NAME="
+                                , paste0("\"", sub(extension(solarrad.name), "", basename(solarrad.name)), "\"")
+                                , " -TYPE=7")
+        system(system.command)
+        
+        file.remove(a.name)
+        file.remove(sub(extension(a.name), ".mgrd", a.name))
+        file.remove(sub(extension(a.name), ".prj", a.name))
+        file.remove(sub(extension(a.name), ".sdat", a.name))
+        file.remove(sub(extension(a.name), ".sdat.aux.xml", a.name))
+      }
+    }
+  }
+}
+
+###################################################################
+### SOLAR RADIATION quotient
+###################################################################
+
+solar.folder.name = paste0("SOLAR_RADIATION/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+
+for (ye in c(1979:2020, seq(2030, 2100, 10)))
+{
+  for (mm in list.mm)
+  {
+    cat("\n ==> Calculate quotient of solar radiation for year ", ye, " and month ", mm, "\n")
+    
+    ## Corrected solar radiation (DEM)
+    solarrad.name = paste0("SolarRadiation_", zone.file.name, "_", mm, "_", ye, ".sgrd")
+    solarrad.name = paste0(solar.folder.name, solarrad.name)
+    
+    ## Corrected solar radiation (DEM FLAT)
+    solarrad.name.flat = sub(extension(solarrad.name), "_DEM_FLAT.sgrd", solarrad.name)
+    
+    ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
+    quotient.name = paste0("Quotient_SolarRadiation_", zone.file.name, "_", mm, "_", ye, ".sgrd")
+    quotient.name = paste0(solar.folder.name, quotient.name)
+    
+    if (!file.exists(quotient.name))
+    {
+      input.name = c(solarrad.name, solarrad.name.flat)
+      
+      system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                              , paste0("\"", paste0(path.to.data, input.name, collapse = ";"), "\"")
+                              , " -XGRIDS=NULL -RESAMPLING=3 -RESULT="
+                              , paste0("\"", path.to.data, quotient.name, "\"")
+                              , " -FORMULA=\"g1 / g2\""
+                              , " -NAME="
+                              , paste0("\"", sub(extension(quotient.name), "", basename(quotient.name)), "\"")
+                              , " -TYPE=7")
+      system(system.command) 
+      
+    }
+  }
+}
+
+###################################################################
+### LAND SURFACE TEMPERATURE computation
+###################################################################
+
+lst.folder.name1 = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name1)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name1))
+}
+lst.folder.name2 = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "_FUTURE/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name2)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name2))
+}
+lst.folder.name3 = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "_TS_PAST/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name3)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name3))
+}
+lst.folder.name4 = paste0("LAND_SURFACE_TEMPERATURE/", zone_name, "_", proj.name,"_resolution", proj.res, "_TS_FUTURE/")
+if (!dir.exists(paste0(path.to.data, lst.folder.name4)))
+{
+  dir.create(paste0(path.to.data, lst.folder.name4))
+}
+new.folder.name = paste0(zone_name, "_", proj.name,"_resolution", proj.res, "/")
+
+
+## DEM
+input.name.dem = DEM_name
+
+## DEM REF (GMTED2010)
+input.name.dem_REF = paste0("DEM_REF_", zone.file.name, ".sgrd")
+input.name.dem_REF = paste0("DEM/", new.folder.name, input.name.dem_REF)
+
+## LAI
+input.name.lai = sub(basename(DEM_name), sub("DEM_", "LAI_0.01_", basename(DEM_name)), DEM_name)
+
+for (ye in c(1979:2013, seq(2020, 2100, 10)))
+{
+  for (mm in list.mm)
+  {
+    ## Lapse rate (between 1979 and 2018)
+    input.name.lapse = paste0("LAPSE_RATE_", zone.file.name, "_", as.numeric(mm), "_", ifelse(ye <= 2013, ye, 2018), ".sgrd")
+    input.name.lapse = paste0("LAPSE_RATE/", new.folder.name, input.name.lapse)
+    input.name.lapse = sub(extension(input.name.lapse), "_coeff2.sgrd", input.name.lapse)
+    
+    ## Quotient solar radiation (DEM) / solar radiation (DEM FLAT)
+    input.name.quotient = paste0("Quotient_SolarRadiation_", zone.file.name, "_", mm, "_", ye, ".sgrd")
+    input.name.quotient = paste0("SOLAR_RADIATION/", new.folder.name, input.name.quotient)
+    
+    for (i in 2:3)
+    {
+      cat("\n ==> Calculate ", c("MEAN","MAX","MIN")[i], " Land Surface Temperature for year ", ye, " and month ", mm, "\n")
+      
+      ## Temperature REF (CHELSA)
+      input.name.temp.vec = c()
+      if (ye <= 2013) ## TS_PAST
+      {
+        input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", ye, "_", mm, ".sgrd")
+        input.name.temp = paste0("TEMPERATURE/", sub("/$", "_TS_PAST/", new.folder.name), input.name.temp)
+        input.name.temp.vec = c(input.name.temp.vec, input.name.temp)
+      }
+      if (ye %in% seq(2010, 2100, 10)) ## TS_FUTURE
+      {
+        for (sce in fut.ts.scenarios)
+        {
+          for (rcp in fut.ts.rcp)
+          {
+            input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", sce, "_rcp", rcp, "_", mm, "_", ye, ".sgrd")
+            input.name.temp = paste0("TEMPERATURE/", sub("/$", "_TS_FUTURE/", new.folder.name), input.name.temp)
+            input.name.temp.vec = c(input.name.temp.vec, input.name.temp)
+          }
+        }
+      }
+      if (ye %in% c(2050, 2070)) ## FUTURE
+      {
+        for (sce in fut.scenarios)
+        {
+          for (rcp in fut.rcp)
+          {
+            input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", sce, "_rcp", rcp, "_"
+                                     , as.numeric(mm), "_", ifelse(ye == 2050, "2041-2060", "2061-2080"), ".sgrd")
+            input.name.temp = paste0("TEMPERATURE/", sub("/$", "_FUTURE/", new.folder.name), input.name.temp)
+            input.name.temp.vec = c(input.name.temp.vec, input.name.temp)
+          }
+        }
+      }
+      ## CLIMATOLOGIES ??
+      # input.name.temp = paste0("TEMP_", c("MEAN","MAX","MIN")[i], "_", zone.file.name, "_", ye, "_", mm, ".sgrd")
+      # input.name.temp = paste0("TEMPERATURE/", new.folder.name, input.name.temp)
+      
+      ## Land Surface Temperature
+      output.name.vec = input.name.temp.vec
+      output.name.vec = sub("^TEMPERATURE/", "LAND_SURFACE_TEMPERATURE/", output.name.vec)
+      output.name.vec = sub("/TEMP_MIN", "/LST_MIN", output.name.vec)
+      output.name.vec = sub("/TEMP_MAX", "/LST_MAX", output.name.vec)
+      
+      output.name.tmp.vec = sub(".sgrd", "_tmp.sgrd", output.name.vec)
+      
+      for (fi in 1:length(input.name.temp.vec))
+      {
+        input.name.temp = input.name.temp.vec[fi]
+        output.name.tmp = output.name.tmp.vec[fi]
+        output.name = output.name.vec[fi]
+        
+        if (!file.exists(paste0(path.to.data, output.name)))
+        {
+          setwd(path.to.data)
+          
+          system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                  , paste0("\"",
+                                           input.name.dem,
+                                           ";",
+                                           input.name.lapse,
+                                           ";",
+                                           input.name.dem_REF,
+                                           ";",
+                                           input.name.temp,
+                                           "\"")
+                                  , " -RESULT="
+                                  , paste0("\"", output.name.tmp, "\"")
+                                  , " -FORMULA=\"d-b*(a-c)\""
+                                  , " -NAME="
+                                  , paste0("\"", output.name.tmp, "\"")
+                                  , " -TYPE=7")
+          system(system.command)
+          
+          system.command = paste0("saga_cmd grid_calculus 1 -GRIDS="
+                                  , paste0("\"",output.name.tmp,";",input.name.quotient, "\"")
+                                  , " -RESULT="
+                                  , paste0("\"", output.name, "\"")
+                                  , " -FORMULA=\"a+1*(b-1/b)*(1-0.01/8)\""
+                                  , " -NAME="
+                                  , paste0("\"", output.name, "\"")
+                                  , " -TYPE=7")
+          system(system.command)
+          
+          file.remove(output.name.tmp)
+          file.remove(sub(extension(output.name.tmp), ".mgrd", output.name.tmp))
+          file.remove(sub(extension(output.name.tmp), ".prj", output.name.tmp))
+          file.remove(sub(extension(output.name.tmp), ".sdat", output.name.tmp))
+          file.remove(sub(extension(output.name.tmp), ".sdat.aux.xml", output.name.tmp))
         }
       }
     }
