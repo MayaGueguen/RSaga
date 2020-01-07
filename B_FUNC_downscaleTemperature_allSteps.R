@@ -15,10 +15,10 @@ path.to.data = "/home/gueguema/Documents/CHELSA_DOWNSCALING/"
 path.to.SAGA = path.to.data
 
 zone_name.tempERA = "World"
-proj.res.clouds = 1000 ## 6000
-proj.res.tempCHELSA = 1000 ## 4000
+proj.res.clouds = 1000
+proj.res.tempCHELSA = 1000
 proj.res.tempERA = 30000
-proj.res.GMTED = 30 ## 310
+proj.res.GMTED = 1000
 proj.name = "Mercator"
 proj.value = "+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs "
 proj.longlat = "+proj=longlat +datum=WGS84 +no_defs +ellps=WGS84 +towgs84=0,0,0"
